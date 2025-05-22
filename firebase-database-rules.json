@@ -1,0 +1,26 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "tourPackages": {
+      ".indexOn": ["vendorId", "destination", "featured", "price", "createdAt"],
+      ".read": true,
+      ".write": true
+    },
+    "bookings": {
+      ".indexOn": ["userId", "vendorId", "packageId", "status"],
+      ".read": true,
+      ".write": true
+    },
+    "users": {
+      ".indexOn": ["email", "role"],
+      ".read": true,
+      ".write": true
+    },
+    "vendors": {
+      ".indexOn": ["email", "approved"],
+      ".read": true,
+      ".write": true
+    }
+  }
+}

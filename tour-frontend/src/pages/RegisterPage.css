@@ -1,0 +1,63 @@
+/* RegisterPage.css */
+.register-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  min-height: calc(100vh - var(--header-height) - 70px); /* Adjust 70px if footer height is different */
+}
+
+.register-form-card {
+  width: 100%;
+  max-width: 500px; /* Slightly wider for more fields */
+  /* .card styles from index.css provide base */
+}
+
+.register-form-card h2 {
+  text-align: center;
+  font-size: 1.75rem; /* 28px */
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+}
+
+/* .form-group, .input styles from LoginPage.css or index.css can be reused */
+
+.register-form-card .btn {
+  width: 100%;
+  padding-top: 0.75rem; /* 12px */
+  padding-bottom: 0.75rem; /* 12px */
+  font-size: 1.0625rem; /* 17px */
+}
+
+.register-page-text {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--text-color-light);
+}
+
+.register-page-text a {
+  font-weight: 500;
+}
+
+.success-message-register {
+  background-color: #d4edda; /* Light green */
+  color: #155724; /* Dark green */
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #c3e6cb;
+  border-radius: var(--border-radius);
+  text-align: center;
+  font-size: 0.9375rem;
+}
+
+.error-message-register {
+  background-color: #f8d7da; /* Light red */
+  color: #721c24; /* Dark red */
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #f5c6cb;
+  border-radius: var(--border-radius);
+  text-align: center;
+  font-size: 0.9375rem;
+} 

@@ -1,0 +1,52 @@
+/* LoginPage.css */
+.login-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  min-height: calc(100vh - var(--header-height) - 70px); /* Adjust 70px if footer height is different */
+}
+
+.login-form-card {
+  width: 100%;
+  max-width: 450px;
+  /* .card styles from index.css provide base */
+}
+
+.login-form-card h2 {
+  text-align: center;
+  font-size: 1.75rem; /* 28px */
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+}
+
+/* .form-group and .input styles will come from FormFields.css or index.css */
+
+.login-form-card .btn {
+  width: 100%;
+  padding-top: 0.75rem; /* 12px */
+  padding-bottom: 0.75rem; /* 12px */
+  font-size: 1.0625rem; /* 17px */
+}
+
+.login-page-text {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--text-color-light);
+}
+
+.login-page-text a {
+  font-weight: 500;
+}
+
+.error-message-login {
+  background-color: #f8d7da; /* Light red */
+  color: #721c24; /* Dark red */
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #f5c6cb;
+  border-radius: var(--border-radius);
+  text-align: center;
+  font-size: 0.9375rem;
+} 

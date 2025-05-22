@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // TEMPORARY DEVELOPMENT RULES - REPLACE WITH PROPER RULES BEFORE PRODUCTION
+    // These rules allow anyone to read/write to your database for testing purposes
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

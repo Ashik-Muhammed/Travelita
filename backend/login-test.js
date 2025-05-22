@@ -1,0 +1,1 @@
+const axios = require("axios"); async function test() { try { const res = await axios.post("http://localhost:5000/api/auth/login", { email: "admin@gmail.com", password: "admin" }); console.log("Success! Token:", res.data.token ? "Valid token received" : "No token"); } catch (err) { console.error("Error:", err.message, err.response?.data); } } test();

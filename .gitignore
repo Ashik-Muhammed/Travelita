@@ -1,0 +1,74 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Firebase credentials
+*-firebase-adminsdk-*.json
+*serviceAccount*.json
+backend/travelita-be5ad-firebase-adminsdk-fbsvc-5b3cb1e058.json
+
+# Build directories
+/dist
+/build
+/.next
+/out
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+/.idea
+/.vscode
+/*.sublime-*
+/*.swp
+/*.swo
+
+# Log files
+/logs
+*.log
+
+# Upload directories
+/uploads
+/backend/uploads/*
+!/backend/uploads/.gitkeep
+
+# Temporary files
+/tmp
+/.tmp
+
+# Dependencies
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Misc
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.idea
+.vscode
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db 

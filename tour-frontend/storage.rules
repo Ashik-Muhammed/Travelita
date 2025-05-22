@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // TEMPORARY DEVELOPMENT RULES - REPLACE WITH PROPER RULES BEFORE PRODUCTION
+    // These rules allow anyone to read/write to your storage for testing purposes
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

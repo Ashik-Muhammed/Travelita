@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #3b82f6; /* Blue-600 */
+  --primary-color-dark: #2563eb; /* Blue-700 */
+  --secondary-color: #10b981; /* Emerald-500 */
+  --text-color: #1f2937; /* Gray-800 */
+  --text-color-light: #4b5563; /* Gray-600 */
+  --bg-color: #f9fafb; /* Gray-50 */
+  --bg-color-alt: #ffffff; /* White */
+  --border-color: #d1d5db; /* Gray-300 */
+  --container-width: 1140px;
+  --header-height: 64px; /* Approx 4rem */
+  --border-radius: 0.5rem; /* 8px */
+  --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* Custom base styles */
+html {
+  scroll-behavior: smooth;
+  font-size: 16px; /* Base font size */
+}
+
+body {
+  font-family: var(--font-family-sans);
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1;
+  padding-top: var(--header-height); /* Ensure content doesn't hide behind fixed navbar */
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--primary-color-dark);
+  text-decoration: underline;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: 0.75em;
+  font-weight: 600;
+}
+
+h1 { font-size: 2.25rem; }
+
+h2 { font-size: 1.875rem; }
+
+h3 { font-size: 1.5rem; }
+
+/* Container for centering content */
+.container {
+  width: 90%;
+  max-width: var(--container-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Basic Button Styles (replaces Tailwind's @apply for .btn) */
+.btn {
+  display: inline-block;
+  padding: 0.625rem 1.25rem; /* 10px 20px */
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  text-align: center;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--bg-color-alt);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-dark);
+  border-color: var(--primary-color-dark);
+}
+
+.btn-secondary {
+  background-color: var(--bg-color-alt);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--primary-color);
+  color: var(--bg-color-alt);
+}
+
+/* Basic Card Styles (replaces Tailwind's @apply for .card) */
+.card {
+  background-color: var(--bg-color-alt);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 1.5rem; /* 24px */
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Input Styles */
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); /* Light blue focus ring */
+}
+
+/* Spinner Animation Keyframes */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: 50%;
+  height: 50px; 
+  width: 50px;
+  border-top: 4px solid var(--primary-color);
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid var(--primary-color);
+  border-left: 4px solid transparent; 
+}
+
+/* Fix for iOS input zooming */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+  .container {
+    width: 95%;
+  }
+}

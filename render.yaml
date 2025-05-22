@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: travelita-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        value: https://ashik-muhammed.github.io
+      - key: NODE_PATH
+        value: /opt/render/project/src/backend 
