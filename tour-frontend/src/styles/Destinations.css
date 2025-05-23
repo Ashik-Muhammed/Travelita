@@ -1,0 +1,291 @@
+/* Destinations Page Styles */
+.destinations-page {
+  background-color: #f8fafc;
+  color: #1f2937;
+}
+
+/* Hero Section */
+.destinations-hero {
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+              url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1600') no-repeat center center/cover;
+  color: white;
+  padding: 120px 0 80px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.destinations-hero h1 {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.destinations-hero p {
+  font-size: 1.25rem;
+  max-width: 700px;
+  margin: 0 auto 30px;
+  opacity: 0.9;
+}
+
+/* Search Section */
+.search-section {
+  margin: -60px auto 60px;
+  position: relative;
+  z-index: 5;
+  max-width: 1200px;
+  padding: 0 15px;
+}
+
+.search-box {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.search-input {
+  position: relative;
+  flex: 1;
+}
+
+.search-input i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+}
+
+.search-input input {
+  width: 100%;
+  padding: 15px 15px 15px 45px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.search-input input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.filter-options {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-options select {
+  padding: 10px 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 0.95rem;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-options select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Destinations Grid */
+.destinations-grid {
+  padding: 60px 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-header h2 {
+  font-size: 2.25rem;
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.section-header p {
+  color: #6b7280;
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.destinations-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.destination-item {
+  transition: transform 0.3s ease;
+}
+
+.destination-item:hover {
+  transform: translateY(-5px);
+}
+
+.load-more {
+  text-align: center;
+  margin-top: 30px;
+}
+
+/* Why Choose Us Section */
+.why-choose-us {
+  background-color: #f9fafb;
+  padding: 80px 0;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.feature {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 12px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #e5e7eb;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.feature-icon {
+  width: 70px;
+  height: 70px;
+  background: #e0f2fe;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: #0369a1;
+  font-size: 1.75rem;
+}
+
+.feature h3 {
+  font-size: 1.25rem;
+  margin-bottom: 15px;
+  color: #111827;
+}
+
+.feature p {
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Newsletter Section */
+.newsletter {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  color: white;
+  padding: 80px 0;
+  text-align: center;
+}
+
+.newsletter h2 {
+  font-size: 2rem;
+  margin-bottom: 15px;
+}
+
+.newsletter p {
+  max-width: 600px;
+  margin: 0 auto 30px;
+  opacity: 0.9;
+  font-size: 1.1rem;
+}
+
+.newsletter-form {
+  display: flex;
+  max-width: 500px;
+  margin: 0 auto;
+  gap: 10px;
+}
+
+.newsletter-form input {
+  flex: 1;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.newsletter-form input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.newsletter-form .btn {
+  padding: 0 30px;
+  font-weight: 600;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+  .destinations-hero {
+    padding: 100px 0 60px;
+  }
+  
+  .destinations-hero h1 {
+    font-size: 2.5rem;
+  }
+  
+  .search-box {
+    padding: 20px;
+  }
+  
+  .filter-options {
+    flex-direction: column;
+  }
+  
+  .filter-options select,
+  .filter-options .btn {
+    width: 100%;
+  }
+  
+  .destinations-container {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .newsletter-form {
+    flex-direction: column;
+    padding: 0 15px;
+  }
+  
+  .newsletter-form .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .destinations-hero h1 {
+    font-size: 2rem;
+  }
+  
+  .section-header h2 {
+    font-size: 1.75rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}

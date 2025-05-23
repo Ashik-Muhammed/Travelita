@@ -193,8 +193,8 @@ img[src*="placeholder.com"] ~ .placeholder-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
-  color: #757575;
+  background-color: #000000;
+  color: #ffffff;
   height: 100%;
   width: 100%;
   border-radius: 0.5rem;
@@ -212,7 +212,7 @@ img[src*="placeholder.com"]:after {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: #f5f5f5;
-  color: #757575;
+  background-color: #000000;
+  color: #ffffff;
   font-size: 0.875rem;
 }

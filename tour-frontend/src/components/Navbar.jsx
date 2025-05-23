@@ -46,9 +46,12 @@ function Navbar() {
   };
 
   const toggleVendorMenu = (e) => {
-    e.stopPropagation(); // Prevent event bubbling
-    setIsVendorMenuOpen(!isVendorMenuOpen);
-    setIsUserMenuOpen(false); // Close user menu when vendor menu is toggled
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setIsVendorMenuOpen(prev => !prev);
+    setIsUserMenuOpen(false);
   };
 
   const toggleUserMenu = (e) => {
@@ -88,9 +91,29 @@ function Navbar() {
     return location.pathname === path ? 'active' : '';
   };
 
+  // Close mobile menu when clicking on overlay
+  useEffect(() => {
+    const handleOverlayClick = (e) => {
+      if (e.target.classList.contains('navbar-overlay')) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleOverlayClick);
+    return () => {
+      document.removeEventListener('click', handleOverlayClick);
+    };
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
   return (
-    <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
-      <div className="navbar-container">
+    <>
+      <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="navbar-container">
         <Link to="/" className="navbar-logo">
           <div className="logo-container">
             <span className="logo-icon">
@@ -166,29 +189,44 @@ function Navbar() {
               <>
                 <Link to="/login" className="btn btn-outline">Login</Link>
                 <Link to="/register" className="btn btn-primary">Register</Link>
-                <div className="vendor-section" onClick={(e) => e.stopPropagation()}>
+                <div className="vendor-section" style={{ position: 'relative' }}>
                   <button 
                     className="vendor-dropdown-toggle" 
                     onClick={toggleVendorMenu}
+                    onKeyDown={(e) => e.key === 'Enter' && toggleVendorMenu(e)}
                     aria-expanded={isVendorMenuOpen}
+                    type="button"
+                    aria-haspopup="true"
+                    aria-controls="vendor-menu"
                   >
                     For Vendors
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="dropdown-arrow">
                       <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                     </svg>
                   </button>
-                  <div className={`vendor-dropdown-menu ${isVendorMenuOpen ? 'show' : ''}`}>
-                    <Link to="/vendor/login">Vendor Login</Link>
-                    <Link to="/vendor/register">Vendor Registration</Link>
-                    <Link to="/admin/login">Admin Login</Link>
+                  <div 
+                    id="vendor-menu"
+                    className={`vendor-dropdown-menu ${isVendorMenuOpen ? 'show' : ''}`}
+                    role="menu"
+                    aria-orientation="vertical"
+                    aria-labelledby="vendor-menu-button"
+                    tabIndex="-1"
+                  >
+                    <Link to="/vendor/login" role="menuitem" tabIndex="-1">Vendor Login</Link>
+                    <Link to="/vendor/register" role="menuitem" tabIndex="-1">Vendor Registration</Link>
+                    <Link to="/admin/login" role="menuitem" tabIndex="-1">Admin Login</Link>
                   </div>
                 </div>
               </>
             )}
           </div>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      
+      {/* Mobile Overlay */}
+      <div className={`navbar-overlay ${isMenuOpen ? 'open' : ''}`}></div>
+    </>
   );
 }
 

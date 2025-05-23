@@ -28,13 +28,13 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const PackageDetails = lazy(() => import('./pages/PackageDetails'));
-const Bookings = lazy(() => import('./pages/Bookings')); // Re-added Bookings import
+const Bookings = lazy(() => import('./pages/Bookings'));
 const AddPackage = lazy(() => import('./pages/AddPackage'));
 const AllPackages = lazy(() => import('./pages/AllPackages'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const AdminSetup = lazy(() => import('./pages/AdminSetup'));
-const AdminLogin = lazy(() => import('./pages/AdminLogin')); // Added AdminLogin import
-const AdminBookings = lazy(() => import('./pages/AdminBookings')); // Added AdminBookings import
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminBookings = lazy(() => import('./pages/AdminBookings'));
 const VendorDashboard = lazy(() => import('./pages/VendorDashboard'));
 const VendorLogin = lazy(() => import('./pages/VendorLogin'));
 const VendorRegister = lazy(() => import('./pages/VendorRegister'));
@@ -52,6 +52,14 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const Cookies = lazy(() => import('./pages/Cookies'));
 const BookingPage = lazy(() => import('./pages/BookingPage'));
 const UserBookings = lazy(() => import('./pages/UserBookings'));
+
+// Destination Pages
+const DestinationLayout = lazy(() => import('./pages/destinations/layouts/DestinationLayout'));
+const Goa = lazy(() => import('./pages/destinations/Goa'));
+const Manali = lazy(() => import('./pages/destinations/Manali'));
+const Jaipur = lazy(() => import('./pages/destinations/Jaipur'));
+const Kerala = lazy(() => import('./pages/destinations/Kerala'));
+const Ladakh = lazy(() => import('./pages/destinations/Ladakh'));
 
 
 // Error fallback component
@@ -219,8 +227,15 @@ function App() {
                     </ProtectedRoute>
                   } />
                   
+                  {/* Destination Pages */}
+                  <Route path="/destinations/goa" element={<Goa />} />
+                  <Route path="/destinations/manali" element={<Manali />} />
+                  <Route path="/destinations/jaipur" element={<Jaipur />} />
+                  <Route path="/destinations/kerala" element={<Kerala />} />
+                  <Route path="/destinations/ladakh" element={<Ladakh />} />
+                  
                   {/* 404 Route */}
-                  <Route path="*" element={<div style={{ margin: '0 auto', padding: '1.5rem', textAlign: 'center' }}><h1 style={{ fontSize: '1.5rem' }}>Page Not Found</h1></div>} />
+                  <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </Suspense>
             </main>

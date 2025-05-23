@@ -1,0 +1,119 @@
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Font Awesome 5 Free';
+  line-height: 1;
+}
+
+.star-rating .stars {
+  color: #f59e0b;
+  display: inline-flex;
+  position: relative;
+}
+
+.star-rating i {
+  display: inline-block;
+  position: relative;
+  color: inherit;
+}
+
+/* Sizes */
+.star-rating.sm {
+  font-size: 0.9rem;
+}
+
+.star-rating.sm .rating-text {
+  font-size: 0.8rem;
+  margin-left: 5px;
+}
+
+.star-rating.md {
+  font-size: 1.1rem;
+}
+
+.star-rating.md .rating-text {
+  font-size: 0.9rem;
+  margin-left: 8px;
+}
+
+.star-rating.lg {
+  font-size: 1.5rem;
+}
+
+.star-rating.lg .rating-text {
+  font-size: 1.1rem;
+  margin-left: 10px;
+}
+
+/* Rating text */
+.rating-text {
+  font-weight: 600;
+  color: #1f2937;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.text-muted {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: 0.9em;
+  margin-left: 2px;
+}
+
+/* Half star styling */
+.fa-star-half-alt {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Empty star color */
+.far.fa-star {
+  color: #d1d5db;
+}
+
+/* Hover effects for interactive ratings */
+.star-rating.interactive .fa-star,
+.star-rating.interactive .fa-star-half-alt {
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.star-rating.interactive .fa-star:hover,
+.star-rating.interactive .fa-star-half-alt:hover,
+.star-rating.interactive .fa-star.hover,
+.star-rating.interactive .fa-star-half-alt.hover {
+  transform: scale(1.2);
+  color: #f59e0b;
+}
+
+/* Readonly state */
+.star-rating.readonly {
+  pointer-events: none;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .star-rating .rating-text {
+    color: #f3f4f6;
+  }
+  
+  .text-muted {
+    color: #9ca3af;
+  }
+  
+  .far.fa-star {
+    color: #4b5563;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .star-rating.md {
+    font-size: 1rem;
+  }
+  
+  .star-rating.lg {
+    font-size: 1.3rem;
+  }
+}

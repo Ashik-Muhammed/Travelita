@@ -1,0 +1,120 @@
+/* Section Header Component */
+.section-header {
+  margin-bottom: 40px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-header h2 {
+  font-size: 2.25rem;
+  color: #111827;
+  margin-bottom: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.section-header p {
+  font-size: 1.1rem;
+  color: #6b7280;
+  max-width: 800px;
+  line-height: 1.7;
+}
+
+/* Alignment Variants */
+.section-header.center {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-header.center p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-header.left {
+  text-align: left;
+  margin-right: auto;
+}
+
+.section-header.right {
+  text-align: right;
+  margin-left: auto;
+}
+
+/* Decorative Elements */
+.section-header.decorative h2 {
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.section-header.decorative h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: #3b82f6;
+  border-radius: 2px;
+}
+
+.section-header.center.decorative h2::after {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.section-header.right.decorative h2::after {
+  left: auto;
+  right: 0;
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+  .section-header h2 {
+    font-size: 2rem;
+  }
+  
+  .section-header p {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .section-header {
+    margin-bottom: 30px;
+  }
+  
+  .section-header h2 {
+    font-size: 1.75rem;
+  }
+  
+  .section-header p {
+    font-size: 1rem;
+  }
+  
+  .section-header.decorative h2::after {
+    width: 50px;
+    height: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-header h2 {
+    font-size: 1.6rem;
+  }
+  
+  .section-header p {
+    font-size: 0.95rem;
+  }
+  
+  .section-header.decorative h2 {
+    padding-bottom: 12px;
+  }
+  
+  .section-header.decorative h2::after {
+    width: 40px;
+    height: 2px;
+  }
+}
