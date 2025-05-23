@@ -31,7 +31,8 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [

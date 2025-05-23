@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Container, Box, Breadcrumbs, Link, Typography } from '@mui/material';
 import { Home as HomeIcon } from '@mui/icons-material';
-import Footer from '../../../components/Footer';
 import './DestinationLayout.css';
 
 const DestinationLayout = ({ children, destination }) => {
@@ -27,7 +26,6 @@ const DestinationLayout = ({ children, destination }) => {
           {children || <Outlet context={{ destination }} />}
         </Container>
       </Box>
-      <Footer />
     </Box>
   );
 };
