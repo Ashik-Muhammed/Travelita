@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './LoginPage.css';
-import '../components/FormFields.css';
+import { FiMail, FiLock, FiLogIn } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { loginUser } from '../services/authService';
 import { auth } from '../config/firebase';
+import '../styles/auth-styles.css';
 
 function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -100,50 +100,105 @@ function Login() {
   };
 
   return (
-    <div className="login-page-container">
-      <div className="card login-form-card">
-        <h2>Login</h2>
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h2>Welcome Back</h2>
+          <p>Sign in to access your account</p>
+        </div>
 
-        {error && (
-          <p className="error-message-login">
-            {error}
-          </p>
-        )}
+        <div className="auth-form">
+          {error && (
+            <div className="auth-message error-message">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              className="input"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="email">Email Address</label>
+              <div className="input-with-icon">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Enter your email"
+                  required
+                  disabled={loading}
+                />
+                <FiMail className="input-icon" />
+              </div>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              className="input"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
+            <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label htmlFor="password">Password</label>
+                <Link 
+                  to="/forgot-password" 
+                  className="forgot-password-link"
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#4f46e5',
+                    textDecoration: 'none',
+                    fontWeight: 500,
+                    transition: 'var(--auth-transition)'
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="input-with-icon">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+                <FiLock className="input-icon" />
+              </div>
+            </div>
 
-          <button type="submit" className="btn btn-primary">Login</button>
-        </form>
-        <p className="login-page-text">
-          Don't have an account? <Link to="/register">Register here</Link>
-        </p>
+            <button
+              type="submit"
+              className="btn"
+              disabled={loading}
+              style={{
+                marginTop: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              {loading ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <FiLogIn />
+                  Sign In
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        <div className="auth-footer">
+          Don't have an account?{' '}
+          <Link to="/register">
+            Create account
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 // Convert array to object with slugs as keys
 export const destinations = {
-  goa: {
+  bali: {
     id: 1,
     slug: 'bali',
     name: 'Bali',
@@ -59,7 +59,7 @@ export const destinations = {
       }
     ]
   },
-  {
+  kyoto: {
     id: 2,
     slug: 'kyoto',
     name: 'Kyoto',
@@ -117,6 +117,5 @@ export const destinations = {
         highlights: ['All 5-day highlights', 'Nara Day Trip', 'Fushimi Inari Shrine', 'Tea Ceremony Experience']
       }
     ]
-  },
-  // Add more destinations as needed
-];
+  }
+};

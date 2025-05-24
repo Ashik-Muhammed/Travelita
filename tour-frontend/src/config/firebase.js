@@ -13,6 +13,7 @@ import {
   orderByChild,
   equalTo
 } from 'firebase/database';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Environment variables
 const isDevelopment = import.meta.env.DEV;
@@ -33,6 +34,7 @@ const firebaseConfig = {
 let _app;
 let _auth;
 let _rtdb;
+let _storage;
 let _isInitialized = false;
 
 // Export initialization status
@@ -46,9 +48,10 @@ const initFirebase = () => {
       console.log('Initializing Firebase app...');
       _app = initializeApp(firebaseConfig);
       
-      // Initialize Auth and Database
+      // Initialize Auth, Database, and Storage
       _auth = getAuth(_app);
       _rtdb = getDatabase(_app);
+      _storage = getStorage(_app);
       
       // Connect to emulators if in development and enabled
       if (isDevelopment && useEmulators) {
@@ -96,6 +99,31 @@ const { app: firebaseApp, auth: firebaseAuth, rtdb: firebaseDb } = initializeFir
 export const app = firebaseApp;
 export const auth = firebaseAuth;
 export const rtdb = firebaseDb;
+
+// Initialize Storage
+export const storage = _storage;
+
+export const uploadFile = async (file, path) => {
+  try {
+    const fileRef = storageRef(storage, path);
+    await uploadBytes(fileRef, file);
+    return await getDownloadURL(fileRef);
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw error;
+  }
+};
+
+export const deleteFile = async (url) => {
+  try {
+    // Create a reference to the file to delete
+    const fileRef = storageRef(storage, url);
+    await deleteObject(fileRef);
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    throw error;
+  }
+};
 
 // Export the database instance
 export const getDb = () => {

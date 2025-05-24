@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FiMail, FiLock, FiLogIn, FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { ref, get } from 'firebase/database';
 import { auth, rtdb } from '../config/firebase';
-import '../styles/AuthForms.css';
+import '../styles/auth-styles.css';
 
 const VendorLogin = () => {
   const [formData, setFormData] = useState({
@@ -11,8 +12,10 @@ const VendorLogin = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showPassword, setShowPassword] = useState(false);
   
   // Check if vendor is already logged in
   useEffect(() => {
@@ -136,44 +139,119 @@ const VendorLogin = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-form-container">
-        <h2>Vendor Login</h2>
+      <div className="auth-card">
+        <div className="auth-header">
+          <h2>Vendor Login</h2>
+          <p>Sign in to manage your tours and bookings</p>
+        </div>
         
-        {error && <div className="auth-error">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
+        <div className="auth-body">
+          {error && (
+            <div className="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <div className="input-with-icon">
+                <span className="input-icon">
+                  <FiMail className="h-5 w-5" />
+                </span>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Enter your email"
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <div className="flex justify-between items-center mb-2">
+                <label className="form-label">Password</label>
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="input-with-icon">
+                <span className="input-icon">
+                  <FiLock className="h-5 w-5" />
+                </span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <FiEyeOff className="h-5 w-5" />
+                  ) : (
+                    <FiEye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <button
+                type="submit"
+                className="btn btn-primary w-full flex items-center justify-center gap-2"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In</span>
+                    <FiArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+          
+          <div className="auth-divider">
+            <span>OR</span>
           </div>
           
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
+          <div className="auth-footer">
+            <p className="text-center text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/vendor/register" className="font-medium text-primary hover:underline">
+                Create account
+              </Link>
+            </p>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              <Link to="/login" className="font-medium text-primary hover:underline">
+                ← Back to user login
+              </Link>
+            </p>
           </div>
-          
-          <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        
-        <div className="auth-links">
-          <p>Don't have an account? <Link to="/vendor/register">Register</Link></p>
-          <p><Link to="/">Back to Home</Link></p>
         </div>
       </div>
     </div>

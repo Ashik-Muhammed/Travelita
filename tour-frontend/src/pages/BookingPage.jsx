@@ -10,12 +10,19 @@ function BookingPage() {
   const [tourPackage, setTourPackage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Set default date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
+
   const [bookingData, setBookingData] = useState({
     fullName: '',
     email: '',
     phone: '',
     travelers: 1,
-    date: '',
+    date: tomorrowFormatted, // Set default date to tomorrow
+    time: '09:00', // Default time
+    duration: 1, // Default duration in hours
     specialRequests: ''
   });
   const [user, setUser] = useState(null);
@@ -63,44 +70,73 @@ function BookingPage() {
   }, [packageId]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setBookingData({
       ...bookingData,
-      [name]: value
+      [name]: type === 'number' ? parseInt(value) || 1 : value
     });
   };
+
+  // Calculate minimum date (tomorrow)
+  const minDate = tomorrowFormatted;
+  // Calculate maximum date (1 year from now)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  const maxDateFormatted = maxDate.toISOString().split('T')[0];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!user) {
-      // Redirect to login if not logged in
-      navigate('/login', { state: { from: `/packages/${packageId}/book` } });
+      setError('Please log in to book a tour');
       return;
     }
 
     try {
       setSubmitting(true);
+      setError(null);
+
+      // Combine date and time into a single datetime string
+      const startDateTime = new Date(`${bookingData.date}T${bookingData.time}`);
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setHours(endDateTime.getHours() + bookingData.duration);
       
-      // Create booking in Firebase
-      const bookingsRef = ref(rtdb, 'bookings');
-      const newBookingRef = push(bookingsRef);
+      // Create a new booking reference
+      const newBookingRef = push(ref(rtdb, 'bookings'));
       
       const bookingToSave = {
         packageId,
         packageName: tourPackage.title,
         packageImage: tourPackage.images?.[0] || '',
+        destination: tourPackage.destination || tourPackage.title,
         userId: user.id,
         userName: user.name,
         userEmail: user.email,
         ...bookingData,
         totalPrice: tourPackage.price * bookingData.travelers,
-        status: 'pending',
+        status: 'confirmed',
         createdAt: new Date().toISOString(),
-        paymentStatus: 'pending'
+        paymentStatus: 'pending',
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString(),
+        duration: bookingData.duration,
+        timeLeft: Math.ceil((startDateTime - new Date()) / (1000 * 60 * 60 * 24)),
+        timeLeftMs: startDateTime - new Date(),
+        timeSlot: bookingData.time
       };
       
+      // Save booking
       await set(newBookingRef, bookingToSave);
+      
+      // Save to user's trips
+      const userTripsRef = ref(rtdb, `users/${user.id}/trips`);
+      const newTripRef = push(userTripsRef);
+      await set(newTripRef, {
+        ...bookingToSave,
+        bookingId: newBookingRef.key,
+        status: 'upcoming',
+        createdAt: new Date().toISOString()
+      });
       
       setSuccessMessage('Booking submitted successfully! You will receive a confirmation email shortly.');
       setSubmitting(false);
@@ -251,6 +287,49 @@ function BookingPage() {
                   onChange={handleInputChange}
                   required
                 />
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="date">Date</label>
+                  <input
+                    type="date"
+                    id="date"
+                    value={bookingData.date}
+                    onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
+                    min={tomorrowFormatted}
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="time">Start Time</label>
+                  <input
+                    type="time"
+                    id="time"
+                    value={bookingData.time}
+                    onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
+                    min="06:00"
+                    max="22:00"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="duration">Duration (hours)</label>
+                  <select
+                    id="duration"
+                    value={bookingData.duration}
+                    onChange={(e) => setBookingData({...bookingData, duration: parseInt(e.target.value)})}
+                    required
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(hour => (
+                      <option key={hour} value={hour}>
+                        {hour} {hour === 1 ? 'hour' : 'hours'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               
               <div className="form-group">

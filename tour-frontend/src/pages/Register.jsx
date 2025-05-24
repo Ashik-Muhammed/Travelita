@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './RegisterPage.css';
-import '../components/FormFields.css';
+import { FiUser, FiMail, FiLock, FiUserPlus } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { registerUser } from '../services/authService';
+import '../styles/auth-styles.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -89,66 +89,124 @@ const Register = () => {
   };
 
   return (
-    <div className="register-page-container">
-      <div className="card register-form-card">
-        <h2>Create Account</h2>
+    <div className="auth-container">
+      <div className="auth-card" style={{ maxWidth: '32rem' }}>
+        <div className="auth-header">
+          <h2>Create an Account</h2>
+          <p>Join us to start your journey</p>
+        </div>
 
-        {success && <p className="success-message-register">{success}</p>}
-        {error && <p className="error-message-register">{error}</p>}
+        <div className="auth-form">
+          {success && (
+            <div className="auth-message success-message">
+              {success}
+            </div>
+          )}
+          
+          {error && (
+            <div className="auth-message error-message">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              className="input"
-              placeholder="Enter your full name"
-              value={formData.name}
-              onChange={handleChange}
-              required
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="name">Full Name</label>
+              <div className="input-with-icon">
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="John Doe"
+                  required
+                  disabled={loading}
+                />
+                <FiUser className="input-icon" />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email">Email Address</label>
+              <div className="input-with-icon">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="you@example.com"
+                  required
+                  disabled={loading}
+                />
+                <FiMail className="input-icon" />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-with-icon">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+                <FiLock className="input-icon" />
+              </div>
+              <p className="password-hint" style={{ 
+                fontSize: '0.75rem', 
+                color: '#6b7280', 
+                margin: '0.25rem 0 0',
+                textAlign: 'left'
+              }}>
+                Must be at least 6 characters
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              className="btn"
               disabled={loading}
-            />
-          </div>
+              style={{
+                marginTop: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              {loading ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  <FiUserPlus />
+                  Sign Up
+                </>
+              )}
+            </button>
 
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              className="input"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              disabled={loading}
-            />
-          </div>
+          </form>
+        </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              className="input"
-              placeholder="Create a password (min. 6 characters)"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              disabled={loading}
-            />
-          </div>
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Registering...' : 'Register'}
-          </button>
-        </form>
-        <p className="register-page-text">
-          Already have an account? <Link to="/login">Login here</Link>
-        </p>
+        <div className="auth-footer">
+          Already have an account?{' '}
+          <Link to="/login">
+            Sign in
+          </Link>
+        </div>
       </div>
     </div>
   );

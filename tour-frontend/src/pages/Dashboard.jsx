@@ -5,6 +5,15 @@ import { signOut, updateProfile } from 'firebase/auth';
 import { ref as dbRef, set, get } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
+import { 
+  FiUser, FiMail, FiPhone, FiCalendar, 
+  FiMapPin, FiClock, FiEdit2, FiLogOut, 
+  FiX, FiSave, FiUserCheck, FiPackage, 
+  FiHelpCircle, FiZap, FiHeart, FiCheckCircle,
+  FiAlertCircle
+} from 'react-icons/fi';
+import { FaHotel, FaPlaneDeparture, FaUtensils, FaHiking } from 'react-icons/fa';
+import { BsCalendarCheck, BsPeople, BsClockHistory, BsGeoAlt } from 'react-icons/bs';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -148,90 +157,92 @@ const Dashboard = () => {
     }));
   };
 
+  const handleCancelBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        setLoading(true);
+        // Update booking status in the database
+        const bookingRef = dbRef(db, `bookings/${bookingId}`);
+        await set(bookingRef, {
+          ...bookings.find(b => b.id === bookingId),
+          status: 'cancelled',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        
+        // Refresh bookings
+        const userBookings = await getUserBookings();
+        setBookings(userBookings || []);
+        
+        alert('Booking cancelled successfully!');
+      } catch (err) {
+        console.error('Error cancelling booking:', err);
+        alert(`Failed to cancel booking: ${err.message || 'Please try again.'}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleProfileUpdate = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
     setUpdateError('');
     setUpdateSuccess('');
     
     try {
-      const user = auth.currentUser;
-      if (!user) {
+      setLoading(true);
+      
+      if (!currentUser) {
         throw new Error('No authenticated user found');
       }
-
+      
       // Prepare updates for auth and database
-      const authUpdates = {};
-      const dbUpdates = {
-        email: user.email,
-        lastUpdated: Date.now()
+      const updates = {
+        displayName: formData.displayName,
+        photoURL: photoPreview,
+        email: currentUser.email,
+        lastUpdated: new Date().toISOString()
       };
       
-      // Handle display name update
-      const newDisplayName = formData.displayName.trim();
-      if (newDisplayName && newDisplayName !== (user.displayName || '')) {
-        authUpdates.displayName = newDisplayName;
-        dbUpdates.displayName = newDisplayName;
-      }
+      // Update profile in Firebase Auth
+      await updateProfile(currentUser, {
+        displayName: updates.displayName,
+        photoURL: updates.photoURL
+      });
       
-      // Handle photo URL update
-      if (formData.photoFile) {
-        // For new photos, convert to base64 and store in database
-        const base64Image = await convertToBase64(formData.photoFile);
-        dbUpdates.photoURL = base64Image;
-      } else if (photoPreview === '') {
-        // If photo was removed
-        dbUpdates.photoURL = '';
-      } else if (photoPreview && photoPreview !== currentUser?.photoURL) {
-        // If it's an existing preview (from editing)
-        dbUpdates.photoURL = photoPreview;
-      }
+      // Update user data in Realtime Database
+      const userRef = dbRef(db, `users/${currentUser.uid}`);
+      await set(userRef, updates);
       
-      // Update auth profile first (only non-photo updates)
-      if (Object.keys(authUpdates).length > 0) {
-        console.log('Updating auth with:', authUpdates);
-        await updateProfile(user, authUpdates);
-      }
+      // Update local state
+      setCurrentUser({
+        ...currentUser,
+        displayName: updates.displayName,
+        photoURL: updates.photoURL
+      });
       
-      // Then update the database with all user data
-      console.log('Updating database with:', dbUpdates);
-      await db.set(`users/${user.uid}`, dbUpdates);
-      
-      // Update the auth profile with display name if it changed
-      if (authUpdates.displayName) {
-        await updateProfile(user, { displayName: authUpdates.displayName });
-      }
-      
-      setUpdateSuccess('Profile updated successfully!');
-      
-      // Update local state to reflect changes
+      // Reset form data
       setFormData({
-        displayName: newDisplayName,
+        displayName: updates.displayName,
         photoFile: null
       });
       
-      // Force refresh the user data
-      if (refreshUser) {
-        // First update the local state
-        const refreshedUser = await refreshUser();
-        // Then update the photo preview with the latest data
-        if (refreshedUser?.photoURL) {
-          setPhotoPreview(refreshedUser.photoURL);
-        }
-      }
+      setUpdateSuccess('Profile updated successfully!');
       
       // Close edit mode after a short delay
       setTimeout(() => {
         setIsEditing(false);
         setUpdateSuccess('');
-      }, 2000);
+      }, 1500);
     } catch (err) {
-      console.error('Error updating profile:', err);
-      console.error('Error details:', {
+      console.error('Error updating profile:', err, {
         code: err.code,
         message: err.message,
         stack: err.stack
       });
       setUpdateError(`Failed to update profile. ${err.message || 'Please try again.'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -239,16 +250,21 @@ const Dashboard = () => {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
+        <p>Loading your dashboard...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="error-container">
-        <h2>Error</h2>
+      <div className="empty-state">
+        <FiAlertCircle className="text-danger" size={48} />
+        <h3>Something went wrong</h3>
         <p>{error}</p>
-        <button onClick={() => window.location.reload()} className="btn btn-primary">
+        <button 
+          onClick={() => window.location.reload()} 
+          className="btn btn-primary"
+        >
           Try Again
         </button>
       </div>
@@ -257,22 +273,28 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-page">
+      {/* Header with welcome section */}
       <div className="dashboard-header">
-        <div className="container">
-          <h1>My Dashboard</h1>
-          <p>Welcome back, {currentUser?.displayName || currentUser?.email}!</p>
+        <div className="dashboard-header-content">
+          <div className="welcome-section">
+            <h1>Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Explorer'}! 👋</h1>
+            <p>Here's what's happening with your travel plans</p>
+          </div>
         </div>
       </div>
 
-      <div className="container">
+      <div className="dashboard-container">
         <div className="dashboard-grid">
-          {/* Profile Section */}
+          {/* Profile Card */}
           <div className="dashboard-card profile-card">
-            <h2>My Profile</h2>
+            <h2><FiUser /> My Profile</h2>
             {isEditing ? (
-              <form onSubmit={handleProfileUpdate} className="profile-edit-form">
+              <div className="profile-edit-form">
+                {updateError && <div className="alert alert-danger"><FiAlertCircle /> {updateError}</div>}
+                {updateSuccess && <div className="alert alert-success"><FiCheckCircle /> {updateSuccess}</div>}
+                
                 <div className="form-group">
-                  <label htmlFor="displayName">Display Name</label>
+                  <label htmlFor="displayName">Full Name</label>
                   <input
                     type="text"
                     id="displayName"
@@ -280,43 +302,37 @@ const Dashboard = () => {
                     value={formData.displayName}
                     onChange={handleInputChange}
                     className="form-control"
-                    required
+                    placeholder="Enter your full name"
                   />
                 </div>
+                
                 <div className="form-group">
-                  <label htmlFor="profilePhoto">Profile Photo</label>
+                  <label>Profile Photo</label>
                   <div className="profile-photo-upload">
                     <div className="photo-preview">
                       {photoPreview ? (
-                        <img src={photoPreview} alt="Profile preview" className="preview-image" />
+                        <img src={photoPreview} alt="Profile Preview" className="preview-image" />
                       ) : (
-                        <div className="photo-placeholder">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                          </svg>
-                        </div>
+                        <FiUser className="photo-placeholder" />
                       )}
                     </div>
                     <div className="file-input-container">
                       <input
                         type="file"
-                        id="profilePhoto"
-                        name="profilePhoto"
+                        id="photoFile"
+                        name="photoFile"
                         accept="image/*"
                         onChange={handleFileChange}
                         className="file-input"
                       />
-                      <label htmlFor="profilePhoto" className="btn btn-outline">
-                        {formData.photoFile ? 'Change Photo' : 'Upload Photo'}
+                      <label htmlFor="photoFile" className="btn btn-outline btn-sm">
+                        Change Photo
                       </label>
-                      {formData.photoFile && (
+                      {photoPreview && (
                         <button 
                           type="button" 
-                          className="btn btn-text"
-                          onClick={() => {
-                            setFormData(prev => ({ ...prev, photoFile: null }));
-                            setPhotoPreview(currentUser?.photoURL || '');
-                          }}
+                          className="btn-text"
+                          onClick={handleRemovePhoto}
                         >
                           Remove
                         </button>
@@ -324,122 +340,182 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-                {updateError && <div className="alert alert-danger">{updateError}</div>}
-                {updateSuccess && <div className="alert alert-success">{updateSuccess}</div>}
+
                 <div className="form-actions">
-                  <button type="submit" className="btn btn-primary">Save Changes</button>
                   <button 
                     type="button" 
                     className="btn btn-outline"
-                    onClick={() => setIsEditing(false)}
+                    onClick={handleCancelEdit}
                   >
-                    Cancel
+                    <FiX /> Cancel
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-primary"
+                    onClick={handleProfileUpdate}
+                  >
+                    <FiSave /> Save Changes
                   </button>
                 </div>
-              </form>
+              </div>
             ) : (
-              <>
-                <div className="profile-info">
+              <div className="profile-info">
+                <div className="profile-avatar-container">
                   <div className="profile-avatar">
-                    {localPhoto ? (
-                      <img 
-                        src={localPhoto} 
-                        alt={currentUser?.displayName || 'User'} 
-                        className="profile-image"
-                        onError={(e) => {
-                          // Fallback to default avatar if image fails to load
-                          e.target.style.display = 'none';
-                          e.target.nextElementSibling.style.display = 'block';
-                        }}
-                      />
+                    {currentUser?.photoURL ? (
+                      <img src={currentUser.photoURL} alt={currentUser.displayName || 'User'} />
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" style={{display: localPhoto ? 'none' : 'block'}} />
-                      </svg>
+                      <FiUser size={48} />
                     )}
                   </div>
-                  <div className="profile-details">
-                    <p><strong>Name:</strong> {currentUser?.displayName || 'Not set'}</p>
-                    <p><strong>Email:</strong> {currentUser?.email}</p>
-                    <p><strong>Role:</strong> {currentUser?.role || 'user'}</p>
-                    <p><strong>Member Since:</strong> {currentUser?.metadata?.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown'}</p>
+                  <button 
+                    className="profile-avatar-edit"
+                    onClick={handleEditProfile}
+                    title="Edit profile"
+                  >
+                    <FiEdit2 size={16} />
+                  </button>
+                </div>
+                
+                <div className="profile-details">
+                  <h3 className="profile-name">{currentUser?.displayName || 'User'}</h3>
+                  <p className="profile-email">
+                    <FiMail /> {currentUser?.email}
+                  </p>
+                  
+                  <div className="profile-stats">
+                    <div className="stat-item">
+                      <div className="stat-value">{bookings.length}</div>
+                      <div className="stat-label">Trips</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value">0</div>
+                      <div className="stat-label">Wishlist</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value">0</div>
+                      <div className="stat-label">Reviews</div>
+                    </div>
                   </div>
                 </div>
+                
                 <div className="profile-actions">
                   <button 
-                    className="btn btn-outline" 
+                    className="btn btn-outline btn-sm"
                     onClick={handleEditProfile}
                   >
-                    Edit Profile
+                    <FiEdit2 /> Edit Profile
                   </button>
-                  <button onClick={handleLogout} className="btn btn-danger">Logout</button>
+                  <button 
+                    className="btn btn-outline btn-sm"
+                    onClick={handleLogout}
+                  >
+                    <FiLogOut /> Logout
+                  </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Bookings Section */}
+          {/* Bookings Card */}
           <div className="dashboard-card bookings-card">
-            <h2>Recent Bookings</h2>
+            <h2><FiCalendar /> Upcoming Trips</h2>
             {bookings.length > 0 ? (
               <div className="bookings-list">
-                {bookings.slice(0, 3).map((booking) => (
-                  <div key={booking.id} className="booking-item">
-                    <div className="booking-info">
-                      <h3>{booking.packageTitle || 'Package Title'}</h3>
-                      <p><strong>Status:</strong> <span className={`status ${booking.status}`}>{booking.status}</span></p>
-                      <p><strong>Date:</strong> {booking.bookingDate ? new Date(booking.bookingDate).toLocaleDateString() : 'Unknown'}</p>
-                      <p><strong>Price:</strong> ₹{booking.price?.toLocaleString() || '0'}</p>
+                {bookings.map((booking) => (
+                  <div key={booking.id} className="booking-card">
+                    <div className="booking-header">
+                      <h3 className="booking-title">
+                        <FiPackage size={18} /> {booking.packageName || 'Tour Package'}
+                      </h3>
+                      <span className={`booking-status status-${(booking.status || 'pending').toLowerCase()}`}>
+                        {booking.status || 'Pending'}
+                      </span>
                     </div>
-                    <Link to={`/packages/${booking.packageId}`} className="btn btn-sm btn-primary">
-                      View Package
-                    </Link>
+                    
+                    <div className="booking-details">
+                      <div className="detail-item">
+                        <FiCalendar />
+                        <span>{booking.date || 'Date not specified'}</span>
+                      </div>
+                      <div className="detail-item">
+                        <FiMapPin />
+                        <span>{booking.destination || 'Destination not specified'}</span>
+                      </div>
+                      <div className="detail-item">
+                        <FiClock />
+                        <span>{booking.duration || 'Duration not specified'}</span>
+                      </div>
+                      <div className="detail-item">
+                        <FiUser />
+                        <span>{booking.guests || '1'} {booking.guests === 1 ? 'Person' : 'People'}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="booking-actions">
+                      <Link 
+                        to={`/bookings/${booking.id}`} 
+                        className="btn btn-outline btn-sm"
+                      >
+                        View Details
+                      </Link>
+                      <button 
+                        className="btn btn-outline btn-sm text-danger"
+                        onClick={() => handleCancelBooking(booking.id)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="no-bookings">
-                <p>You haven't made any bookings yet.</p>
-                <Link to="/packages" className="btn btn-primary">Browse Packages</Link>
+              <div className="empty-state">
+                <FiCalendar size={48} />
+                <h3>No Upcoming Trips</h3>
+                <p>You don't have any upcoming trips. Start exploring and book your next adventure!</p>
+                <Link to="/packages" className="btn btn-primary">
+                  Browse Packages
+                </Link>
+                {bookings.length > 0 && (
+                  <Link to="/bookings" className="btn btn-outline btn-sm mt-2">
+                    View All Bookings
+                  </Link>
+                )}
               </div>
-            )}
-            {bookings.length > 3 && (
-              <Link to="/bookings" className="btn btn-outline view-all">
-                View All Bookings
-              </Link>
             )}
           </div>
 
           {/* Quick Actions */}
           <div className="dashboard-card actions-card">
-            <h2>Quick Actions</h2>
+            <h2><FiZap /> Quick Actions</h2>
             <div className="quick-actions">
               <Link to="/packages" className="action-item">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
-                  <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
-                </svg>
-                Browse Packages
+                <FiPackage size={24} />
+                <span>Browse Packages</span>
               </Link>
               <Link to="/bookings" className="action-item">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path fillRule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0118 9.375v9.375a3 3 0 003-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 00-.673-.05A3 3 0 0015 1.5h-1.5a3 3 0 00-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6zM13.5 3A1.5 1.5 0 0012 4.5h4.5A1.5 1.5 0 0015 3h-1.5z" clipRule="evenodd" />
-                  <path fillRule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V9.375zM6 12a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V12zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 15a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V15zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 18a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V18zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75z" clipRule="evenodd" />
-                </svg>
-                My Bookings
+                <BsCalendarCheck size={24} />
+                <span>My Bookings</span>
               </Link>
-              <Link to="/packages/top" className="action-item">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
-                </svg>
-                Top Packages
+              <Link to="/wishlist" className="action-item">
+                <FiHeart size={24} />
+                <span>Wishlist</span>
               </Link>
-              <Link to="/packages/budget" className="action-item">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
-                </svg>
-                Budget Packages
+              <Link to="/support" className="action-item">
+                <FiHelpCircle size={24} />
+                <span>Help Center</span>
               </Link>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="dashboard-card">
+            <h2><FiClock /> Recent Activity</h2>
+            <div className="empty-state">
+              <FiClock size={48} />
+              <h3>No Recent Activity</h3>
+              <p>Your recent activities will appear here</p>
             </div>
           </div>
         </div>

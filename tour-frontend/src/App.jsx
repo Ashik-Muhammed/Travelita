@@ -35,7 +35,7 @@ import { initFirebase, subscribeToData } from './config/firebase';
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+const UserDashboard = lazy(() => import('./pages/UserDashboard'));
 const PackageDetails = lazy(() => import('./pages/PackageDetails'));
 const Bookings = lazy(() => import('./pages/Bookings').then(module => ({ default: module.Bookings })));
 const AddPackage = lazy(() => import('./pages/AddPackage'));
@@ -458,7 +458,7 @@ function App() {
                   {/* User */}
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
-                      <Dashboard />
+                      <UserDashboard />
                     </ProtectedRoute>
                   } />
                   <Route

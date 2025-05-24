@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth, rtdb } from '../config/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { ref, get } from 'firebase/database';
-import '../styles/VendorDashboard.css';
+import '../styles/VendorDashboard.new.css';
 
 // Dashboard components
 import VendorPackages from '../components/vendor/VendorPackages';
@@ -49,11 +49,23 @@ const VendorDashboard = () => {
         
         // User is a vendor, get vendor data
         const vendorData = vendorSnapshot.val();
-        console.log('Vendor data loaded:', vendorData);
-        setVendorInfo(vendorData);
+        
+        // Get vendor's earnings from the earnings node
+        const earningsRef = ref(rtdb, `earnings/${user.uid}`);
+        const earningsSnapshot = await get(earningsRef);
+        const earningsData = earningsSnapshot.exists() ? earningsSnapshot.val() : { total: 0 };
+        
+        // Combine vendor data with earnings
+        const updatedVendorInfo = {
+          ...vendorData,
+          earnings: typeof earningsData === 'number' ? earningsData : (earningsData.total || 0)
+        };
+        
+        console.log('Vendor data loaded:', updatedVendorInfo);
+        setVendorInfo(updatedVendorInfo);
         
         // Store vendor info in localStorage for convenience
-        localStorage.setItem('vendorInfo', JSON.stringify(vendorData));
+        localStorage.setItem('vendorInfo', JSON.stringify(updatedVendorInfo));
       } catch (err) {
         console.error('Error fetching vendor profile:', err);
         setError('Failed to load vendor profile. Please try logging in again.');
@@ -82,93 +94,170 @@ const VendorDashboard = () => {
   };
 
   if (isLoading) {
-    return <div className="vendor-dashboard-loading">Loading dashboard...</div>;
+    return (
+      <div className="loading-spinner-container">
+        <div className="loading-spinner"></div>
+        <p>Loading dashboard...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="vendor-dashboard-error">{error}</div>;
+    return (
+      <div className="error-container">
+        <div className="alert alert-danger">{error}</div>
+      </div>
+    );
   }
+
+  // Calculate stats for the dashboard
+  const stats = [
+    { 
+      title: 'Earnings', 
+      value: `₹${Math.floor(vendorInfo?.earnings || 0).toLocaleString('en-IN')}`, 
+      icon: 'rupee',
+      color: 'warning',
+      description: 'Total revenue from bookings'
+    }
+  ];
 
   return (
     <div className="vendor-dashboard-container">
-      <div className="vendor-dashboard-header">
-        <h1>Vendor Dashboard</h1>
-        <div className="vendor-dashboard-welcome">
-          Welcome, {vendorInfo?.name || 'Vendor'}!
+      {/* Sidebar */}
+      <aside className="vendor-sidebar">
+        <div className="sidebar-header">
+          <h2>Travelita</h2>
+          
+          <p>Vendor Portal</p>
         </div>
-        <div className="dashboard-actions">
-
-          <button className="logout-button" onClick={handleLogout}>Logout</button>
+        <nav className="sidebar-nav">
+          <div className="nav-item">
+            <a 
+              href="#" 
+              className={`nav-link ${activeTab === 'packages' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab('packages');
+                setShowAddPackage(false);
+              }}
+            >
+              <span></span> Tour Packages
+            </a>
+          </div>
+          <div className="nav-item">
+            <a 
+              href="#" 
+              className={`nav-link ${activeTab === 'bookings' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab('bookings');
+                setShowAddPackage(false);
+              }}
+            >
+              <span></span> Bookings
+            </a>
+          </div>
+          <div className="nav-item">
+            <a 
+              href="#" 
+              className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab('profile');
+                setShowAddPackage(false);
+              }}
+            >
+              <span></span> Profile
+            </a>
+          </div>
+        </nav>
+        <div className="sidebar-footer">
+          <button className="btn btn-block btn-outline" onClick={handleLogout}>
+            <span></span> Logout
+          </button>
         </div>
-      </div>
+      </aside>
 
-      <div className="vendor-dashboard-content">
-        <div className="vendor-dashboard-tabs">
-          <button 
-            className={`tab-button ${activeTab === 'packages' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('packages');
-              setShowAddPackage(false);
-            }}
-          >
-            Tour Packages
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'bookings' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('bookings');
-              setShowAddPackage(false);
-            }}
-          >
-            Bookings
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('profile');
-              setShowAddPackage(false);
-            }}
-          >
-            Profile
-          </button>
+      {/* Main Content */}
+      <main className="vendor-main-content">
+        {/* Dashboard Header */}
+        <header className="dashboard-header">
+          <div className="dashboard-header-content">
+            <div className="welcome-section">
+              <h1>Welcome back, {vendorInfo?.name || 'Vendor'}! 👋</h1>
+              <p>Here's what's happening with your tour business today</p>
+            </div>
+          </div>
+        </header>
+
+        {/* Quick Stats */}
+        <div className="quick-stats">
+          {stats.map((stat, index) => (
+            <div key={index} className="stat-card">
+              <div className="stat-icon" style={{ background: `var(--${stat.color}-100)`, color: `var(--${stat.color}-600)` }}>
+                {stat.icon}
+              </div>
+              <div className="stat-content">
+                <h3>{stat.value}</h3>
+                <p>{stat.title}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="vendor-dashboard-view">
+        {/* Main Content Area */}
+        <div className="content-body">
           {activeTab === 'packages' && !showAddPackage && (
-            <>
-              <div className="packages-header">
-                <h2>My Tour Packages</h2>
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">My Tour Packages</h2>
                 <button 
-                  className="add-package-button"
+                  className="btn btn-primary"
                   onClick={() => setShowAddPackage(true)}
                 >
-                  Add New Package
+                  + Add New Package
                 </button>
               </div>
-              <VendorPackages />
-            </>
+              <div className="card-body">
+                <VendorPackages />
+              </div>
+            </div>
           )}
 
           {activeTab === 'packages' && showAddPackage && (
-            <>
-              <div className="packages-header">
-                <h2>Add New Package</h2>
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">Add New Package</h2>
                 <button 
-                  className="back-button"
+                  className="btn btn-outline"
                   onClick={() => setShowAddPackage(false)}
                 >
-                  Back to Packages
+                  ← Back to Packages
                 </button>
               </div>
-              <PackageForm onSuccess={() => setShowAddPackage(false)} />
-            </>
+              <div className="card-body">
+                <PackageForm onSuccess={() => setShowAddPackage(false)} />
+              </div>
+            </div>
           )}
 
-          {activeTab === 'bookings' && <VendorBookings />}
+          {activeTab === 'bookings' && (
+            <div className="card">
+              <div className="card-body">
+                <VendorBookings />
+              </div>
+            </div>
+          )}
           
-          {activeTab === 'profile' && <VendorProfile vendorInfo={vendorInfo} />}
+          {activeTab === 'profile' && (
+            <div className="card">
+              <div className="card-body">
+                <VendorProfile vendorInfo={vendorInfo} />
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

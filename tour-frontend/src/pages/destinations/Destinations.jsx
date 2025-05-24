@@ -8,6 +8,7 @@ const Destinations = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
   const [priceFilter, setPriceFilter] = useState('');
+  const [sortBy, setSortBy] = useState('name-asc');
 
   const filteredDestinations = Object.fromEntries(
     Object.entries(destinations)
@@ -27,10 +28,17 @@ const Destinations = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/4 w-full h-full bg-gradient-to-br from-blue-100/30 to-purple-100/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-pink-100/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 bg-gradient-to-r from-blue-600 to-indigo-700 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-40"></div>
-        <div className="absolute top-0 left-0 w-full h-full bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)]"></div>
+      <section className="relative py-24 md:py-36 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60"></div>
+        <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
@@ -44,274 +52,252 @@ const Destinations = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-xl md:text-2xl max-w-3xl mx-auto text-blue-100"
+            className="text-xl md:text-2xl max-w-3xl mx-auto text-blue-100 mb-8"
           >
-            Explore our curated selection of the world's most breathtaking destinations
+            Explore our handpicked destinations and find your perfect getaway amidst breathtaking landscapes and vibrant cultures
           </motion.p>
+          
+          {/* Animated scroll indicator */}
+          <motion.div 
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+            animate={{ y: [0, 10, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          >
+            <svg className="w-8 h-8 text-white opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </motion.div>
         </div>
       </section>
 
       {/* Search and Filter */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 space-y-6">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="Search destinations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      <motion.div 
+        className="container mx-auto px-4 -mt-12 relative z-20"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.8 }}
+      >
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 mb-16 border border-white/20">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1 w-full">
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1.5">Search Destinations</label>
+              <motion.div 
+                className="relative"
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+              >
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  id="search"
+                  className="block w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-blue-300"
+                  placeholder="Search by destination, country, or region"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </motion.div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+            <motion.div 
+              className="w-full md:w-52"
+              whileHover={{ y: -2 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+            >
+              <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1.5">Filter by Region</label>
+              <div className="relative">
                 <select
                   id="region"
-                  className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="appearance-none block w-full pl-3 pr-10 py-2.5 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-xl transition-all duration-300 hover:border-blue-300 cursor-pointer"
                   value={regionFilter}
                   onChange={(e) => setRegionFilter(e.target.value)}
                 >
                   <option value="">All Regions</option>
                   {regions.map(region => (
-                    <option key={region} value={region}>
-                      {region}
-                    </option>
+                    <option key={region} value={region}>{region}</option>
                   ))}
                 </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
-              
-              <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
+            </motion.div>
+            
+            <motion.div 
+              className="w-full md:w-48"
+              whileHover={{ y: -2 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+            >
+              <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1.5">Sort By</label>
+              <div className="relative">
                 <select
-                  id="price"
-                  className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={priceFilter}
-                  onChange={(e) => setPriceFilter(e.target.value)}
+                  id="sort"
+                  className="appearance-none block w-full pl-3 pr-10 py-2.5 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-xl transition-all duration-300 hover:border-blue-300 cursor-pointer"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
                 >
-                  <option value="">All Prices</option>
-                  <option value="budget">$ Budget</option>
-                  <option value="mid-range">$$ Mid-Range</option>
-                  <option value="luxury">$$$ Luxury</option>
+                  <option value="name-asc">Name (A-Z)</option>
+                  <option value="name-desc">Name (Z-A)</option>
+                  <option value="price-asc">Price (Low to High)</option>
+                  <option value="price-desc">Price (High to Low)</option>
+                  <option value="rating-desc">Highest Rated</option>
                 </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
-              
-              <div className="flex items-end">
-                <button 
-                  onClick={() => {
-                    setSearchTerm('');
-                    setRegionFilter('');
-                    setPriceFilter('');
-                  }}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-lg transition duration-200"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </header>
+      </motion.div>
 
       {/* Destinations Grid */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 py-12 relative z-10">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className="text-4xl font-bold text-gray-900 mb-3">
+            Discover Amazing Destinations
+          </h2>
+          <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+            {Object.keys(filteredDestinations).length} {Object.keys(filteredDestinations).length === 1 ? 'destination' : 'destinations'} waiting to be explored
+          </p>
+        </motion.div>
+        
+        {Object.keys(filteredDestinations).length === 0 ? (
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
+            className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 max-w-2xl mx-auto"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Popular Destinations</h2>
-            <div className="w-20 h-1 bg-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 max-w-2xl mx-auto">Discover our handpicked selection of the world's most breathtaking destinations</p>
-          </motion.div>
-          
-          {Object.keys(filteredDestinations).length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-50 mb-4">
+              <svg className="h-12 w-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">No destinations found</h3>
-              <p className="mt-1 text-gray-500">Try adjusting your search or filter to find what you're looking for.</p>
-              <button 
-                onClick={() => {
-                  setSearchTerm('');
-                  setRegionFilter('');
-                  setPriceFilter('');
-                }}
-                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Clear all filters
-              </button>
             </div>
-          ) : (
-            <motion.div 
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
-              initial="hidden"
-              animate="show"
-              variants={{
-                hidden: { opacity: 0 },
-                show: {
-                  opacity: 1,
-                  transition: {
-                    staggerChildren: 0.1
-                  }
-                }
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">No destinations found</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">We couldn't find any destinations matching your search. Try adjusting your filters or search term.</p>
+            <motion.button
+              onClick={() => {
+                setSearchTerm('');
+                setRegionFilter('');
+                setPriceFilter('');
+                setSortBy('name-asc');
               }}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg transition-all duration-300"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {Object.values(filteredDestinations).map((destination) => (
+              Clear all filters
+            </motion.button>
+          </motion.div>
+        ) : (
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+          >
+            {Object.values(filteredDestinations)
+              .sort((a, b) => {
+                switch(sortBy) {
+                  case 'name-asc':
+                    return a.name.localeCompare(b.name);
+                  case 'name-desc':
+                    return b.name.localeCompare(a.name);
+                  case 'price-asc':
+                    return (a.startingPrice || 0) - (b.startingPrice || 0);
+                  case 'price-desc':
+                    return (b.startingPrice || 0) - (a.startingPrice || 0);
+                  case 'rating-desc':
+                    return (b.rating || 0) - (a.rating || 0);
+                  default:
+                    return 0;
+                }
+              })
+              .map((destination, index) => (
                 <motion.div
                   key={destination.id}
                   variants={{
                     hidden: { opacity: 0, y: 20 },
-                    show: { opacity: 1, y: 0 }
+                    show: { 
+                      opacity: 1, 
+                      y: 0,
+                      transition: {
+                        duration: 0.5,
+                        ease: "easeOut"
+                      }
+                    }
                   }}
-                  transition={{ duration: 0.5 }}
+                  initial="hidden"
+                  animate="show"
+                  transition={{ delay: index * 0.1 }}
                 >
                   <DestinationCard 
                     destination={{
                       ...destination,
-                      image: destination.heroImage || destination.gallery?.[0],
-                      startingPrice: destination.startingPrice,
-                      duration: destination.duration,
-                      rating: destination.rating,
-                      slug: destination.slug || Object.entries(destinations).find(([_, d]) => d.id === destination.id)?.[0] || destination.id.toString(),
-                      name: destination.name,
-                      country: destination.country
+                      slug: Object.keys(destinations).find(key => destinations[key].id === destination.id) || destination.id
                     }} 
                   />
                 </motion.div>
               ))}
-            </motion.div>
-          )}
-          
-          {Object.keys(filteredDestinations).length > 0 && (
-            <div className="mt-12 text-center">
-              <button className="px-8 py-3 bg-white text-blue-600 font-medium rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition duration-200">
-                Load More Destinations
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Why Choose Us */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Why Choose Travelita?</h2>
-            <div className="w-20 h-1 bg-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 max-w-3xl mx-auto">Experience the difference with our exceptional travel services and personalized experiences</p>
           </motion.div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: (
-                  <svg className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                ),
-                title: "Best Price Guarantee",
-                description: "We offer the most competitive prices for your dream vacation with our best price guarantee."
-              },
-              {
-                icon: (
-                  <svg className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ),
-                title: "24/7 Support",
-                description: "Our dedicated travel experts are available around the clock to assist you with any queries or concerns."
-              },
-              {
-                icon: (
-                  <svg className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                ),
-                title: "Safe & Secure",
-                description: "Your safety and security are our top priorities. Travel with confidence knowing you're in good hands."
-              }
-            ].map((feature, index) => (
-              <motion.div 
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-6 mx-auto">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center">{feature.title}</h3>
-                <p className="text-gray-600 text-center">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+        )}
+        
+        {/* Decorative elements */}
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-10 -right-10 w-80 h-80 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      </div>
 
-      {/* Newsletter */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="md:flex">
-              <div className="md:flex-shrink-0">
-                <img 
-                  className="h-48 w-full object-cover md:w-48 md:h-full" 
-                  src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
-                  alt="Travel newsletter"
-                />
+      {/* Call to Action */}
+      <section className="relative py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 overflow-hidden">
+        <div className="absolute inset-0 bg-pattern opacity-5"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 to-indigo-800/30"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-5xl mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-white/20">
+            <div className="p-8 md:p-12 lg:flex lg:items-center lg:justify-between">
+              <div className="lg:w-2/3">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Ready for your next adventure?</h2>
+                <p className="text-lg text-gray-600 mb-6 lg:mb-0">
+                  Can't find what you're looking for? Our travel experts can help you plan the perfect trip tailored to your preferences.
+                </p>
               </div>
-              <div className="p-8">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
+              <div className="lg:w-1/3 flex justify-center lg:justify-end">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full lg:w-auto px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Get Exclusive Travel Deals</h2>
-                  <p className="mt-2 text-gray-600">Subscribe to our newsletter and be the first to know about our latest offers and travel inspirations.</p>
-                  <form className="mt-6">
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <input
-                        type="email"
-                        placeholder="Enter your email address"
-                        className="flex-grow px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                      />
-                      <button
-                        type="submit"
-                        className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                      >
-                        Subscribe
-                      </button>
-                    </div>
-                    <p className="mt-3 text-sm text-gray-500">
-                      We respect your privacy. Unsubscribe at any time.
-                    </p>
-                  </form>
-                </motion.div>
+                  Contact Our Experts
+                </motion.button>
               </div>
             </div>
           </div>
         </div>
+        {/* Decorative elements */}
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
+        <div className="absolute -bottom-40 -left-20 w-80 h-80 bg-white/10 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
       </section>
     </div>
   );

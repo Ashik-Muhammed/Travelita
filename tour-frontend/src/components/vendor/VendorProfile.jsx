@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { rtdb } from '../../config/firebase';
-import { ref, update, get } from 'firebase/database';
+import React, { useState, useEffect, useRef } from 'react';
+import { rtdb, storage } from '../../config/firebase';
+import { ref as dbRef, update, get } from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { FiCamera, FiUpload, FiX } from 'react-icons/fi';
+import './VendorProfile.css';
 
 const VendorProfile = ({ vendorInfo }) => {
   const [formData, setFormData] = useState({
@@ -18,6 +21,9 @@ const VendorProfile = ({ vendorInfo }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(vendorInfo?.photoURL || '');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleChange = (e) => {
     setFormData({
@@ -51,7 +57,12 @@ const VendorProfile = ({ vendorInfo }) => {
       };
       
       // Reference to the vendor's profile in Firebase
-      const vendorRef = ref(rtdb, `users/${user.uid}`);
+      const vendorRef = dbRef(rtdb, `users/${user.uid}`);
+      
+      // Include photo URL in the update if it exists
+      if (profilePhoto && profilePhoto !== vendorInfo?.photoURL) {
+        dataToSend.photoURL = profilePhoto;
+      }
       
       // Update the vendor profile
       await update(vendorRef, dataToSend);
@@ -88,9 +99,116 @@ const VendorProfile = ({ vendorInfo }) => {
     }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      setError(null);
+      
+      // Create a reference to the file in Firebase Storage
+      const fileRef = storageRef(storage, `profile_photos/${vendorInfo.uid || 'temp'}_${Date.now()}`);
+      
+      // Upload the file
+      const snapshot = await uploadBytes(fileRef, file);
+      
+      // Get the download URL
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      // Update the profile photo state
+      setProfilePhoto(downloadURL);
+      
+      // If user is in edit mode, save the photo URL immediately
+      if (editing) {
+        const userRef = dbRef(rtdb, `users/${vendorInfo.uid}`);
+        await update(userRef, { photoURL: downloadURL });
+        
+        // Update local storage
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+          user.photoURL = downloadURL;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      }
+      
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      setError('Failed to upload photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    try {
+      setUploading(true);
+      setProfilePhoto('');
+      
+      if (editing && vendorInfo.uid) {
+        const userRef = dbRef(rtdb, `users/${vendorInfo.uid}`);
+        await update(userRef, { photoURL: '' });
+        
+        // Update local storage
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+          user.photoURL = '';
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      }
+    } catch (err) {
+      console.error('Error removing photo:', err);
+      setError('Failed to remove photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="vendor-profile">
-      <h2>Profile Information</h2>
+      <div className="profile-header">
+        <div className="profile-photo-container">
+          <div className="profile-photo">
+            {profilePhoto ? (
+              <img src={profilePhoto} alt="Profile" />
+            ) : (
+              <div className="profile-photo-placeholder">
+                {formData.name ? formData.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
+            {editing && (
+              <div className="photo-actions">
+                <button 
+                  type="button" 
+                  className="upload-btn"
+                  onClick={() => fileInputRef.current.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? 'Uploading...' : <><FiUpload /> Change Photo</>}
+                </button>
+                {profilePhoto && (
+                  <button 
+                    type="button" 
+                    className="remove-btn"
+                    onClick={removePhoto}
+                    disabled={uploading}
+                  >
+                    <FiX /> Remove
+                  </button>
+                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        <h2>Profile Information</h2>
+      </div>
       
       {error && <div className="profile-error">{error}</div>}
       {success && <div className="profile-success">{success}</div>}
