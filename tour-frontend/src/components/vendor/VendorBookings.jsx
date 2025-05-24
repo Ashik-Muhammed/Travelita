@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, rtdb } from '../../config/firebase';
 import { ref, get, update, query, orderByChild, equalTo } from 'firebase/database';
+import './VendorBookings.css';
 
 const VendorBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -127,7 +128,12 @@ const VendorBookings = () => {
   };
 
   if (loading) {
-    return <div className="bookings-loading">Loading bookings...</div>;
+    return (
+      <div className="bookings-loading">
+        <div className="spinner"></div>
+        <p>Loading bookings...</p>
+      </div>
+    );
   }
 
   if (error) {
@@ -136,6 +142,7 @@ const VendorBookings = () => {
 
   return (
     <div className="vendor-bookings">
+      <h2>Manage Bookings</h2>
       <div className="booking-filters">
         <button 
           className={`filter-button ${filter === 'all' ? 'active' : ''}`}
@@ -172,6 +179,9 @@ const VendorBookings = () => {
       {filteredBookings.length === 0 ? (
         <div className="no-bookings">
           <p>No {filter !== 'all' ? filter : ''} bookings found.</p>
+          {bookings.length === 0 && (
+            <p>When customers book your packages, they'll appear here.</p>
+          )}
         </div>
       ) : (
         <div className="bookings-table">

@@ -5,27 +5,32 @@
 
 :root {
   /* Primary Colors */
-  --primary-color: #1e88e5;       /* Main brand color */
-  --primary-light: #6ab7ff;       /* Lighter shade of primary */
-  --primary-dark: #005cb2;        /* Darker shade of primary */
+  --primary-color: #2563eb;       /* Main brand color - Vibrant blue */
+  --primary-light: #60a5fa;       /* Lighter shade of primary */
+  --primary-dark: #1d4ed8;        /* Darker shade of primary */
   
   /* Secondary Colors */
-  --secondary-color: #26a69a;     /* Secondary brand color */
-  --secondary-light: #64d8cb;     /* Lighter shade of secondary */
-  --secondary-dark: #00766c;      /* Darker shade of secondary */
+  --secondary-color: #059669;     /* Secondary brand color - Emerald */
+  --secondary-light: #34d399;     /* Lighter shade of secondary */
+  --secondary-dark: #047857;      /* Darker shade of secondary */
   
   /* Accent Colors */
-  --accent-color: #ff6d00;        /* Accent color for CTAs */
-  --accent-light: #ff9e40;        /* Lighter shade of accent */
-  --accent-dark: #c43c00;         /* Darker shade of accent */
+  --accent-color: #e11d48;        /* Accent color for CTAs - Rose */
+  --accent-light: #fb7185;        /* Lighter shade of accent */
+  --accent-dark: #be123c;         /* Darker shade of accent */
   
   /* Neutral Colors */
-  --background-color: #f8f9fa;    /* Light background color */
+  --background-color: #f9fafb;    /* Light background color */
   --card-color: #ffffff;          /* Card/container background */
-  --text-primary: #1a1a2e;        /* Primary text color - Dark blue-gray */
-  --text-secondary: #2d3748;      /* Secondary text color - Dark gray-blue */
-  --text-tertiary: #4a5568;       /* Tertiary text color - Medium gray */
-  --border-color: #e2e8f0;        /* Border color - Light gray */
+  --text-primary: #111827;        /* Primary text color - Dark blue-gray */
+  --text-secondary: #374151;      /* Secondary text color - Dark gray-blue */
+  --text-tertiary: #6b7280;       /* Tertiary text color - Medium gray */
+  --border-color: #e5e7eb;        /* Border color - Light gray */
+  
+  /* Background gradients */
+  --gradient-primary: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+  --gradient-secondary: linear-gradient(135deg, #059669 0%, #34d399 100%);
+  --gradient-accent: linear-gradient(135deg, #e11d48 0%, #fb7185 100%);
   
   /* Status Colors */
   --success-color: #4caf50;       /* Success messages */

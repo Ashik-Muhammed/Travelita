@@ -13,14 +13,19 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.9.0",
+    "bootstrap": "^5.3.6",
+    "date-fns": "^4.1.0",
     "firebase": "^11.8.1",
+    "history": "^5.3.0",
     "multer": "^1.4.5-lts.2",
     "react": "^19.1.0",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
     "react-lazy-load-image-component": "^1.6.3",
     "react-router": "^7.6.0",
     "react-router-dom": "^6.30.0",
+    "react-toastify": "^11.0.5",
     "swiper": "^11.2.7",
     "web-vitals": "^2.1.4"
   },
@@ -44,7 +49,9 @@
     "production": [
       ">0.2%",
       "not dead",
-      "not op_mini all"
+      "not op_mini all",
+      "not ie > 0",
+      "not ie_mob > 0"
     ],
     "development": [
       "last 1 chrome version",
@@ -52,6 +59,10 @@
       "last 1 safari version"
     ]
   },
+  "sideEffects": [
+    "*.css",
+    "*.scss"
+  ],
   "devDependencies": {
     "@vitejs/plugin-react": "^4.4.1",
     "gh-pages": "^6.3.0",

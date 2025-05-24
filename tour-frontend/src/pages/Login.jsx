@@ -4,6 +4,7 @@ import './LoginPage.css';
 import '../components/FormFields.css';
 import { useAuth } from '../contexts/AuthContext';
 import { loginUser } from '../services/authService';
+import { auth } from '../config/firebase';
 
 function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -16,9 +17,11 @@ function Login() {
   useEffect(() => {
     if (currentUser) {
       if (currentUser.role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { replace: true });
+      } else if (currentUser.role === 'vendor') {
+        navigate('/vendor/dashboard', { replace: true });
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     }
   }, [currentUser, navigate]);
@@ -31,15 +34,48 @@ function Login() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+    
     try {
-      setLoading(true);
+      // First validate credentials without changing auth state
       const result = await loginUser(formData.email, formData.password);
       
-      // Navigation will happen automatically through the AuthContext
-      // The useEffect in AuthContext will detect the auth state change
+      if (!result || !result.user) {
+        throw new Error('Login failed. Please check your credentials.');
+      }
+      
+      const { user } = result;
+      
+      // Store the token for subsequent requests
+      if (user.token) {
+        localStorage.setItem('authToken', user.token);
+      }
+      
+      // Only update auth state after successful login
+      const { signInWithEmailAndPassword } = await import('firebase/auth');
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      
+      // Clear the form
+      setFormData({ email: '', password: '' });
+      
+      // Determine the redirect path based on user role
+      let redirectPath = '/dashboard'; // Default for regular users
+      
+      if (user.role === 'admin') {
+        redirectPath = '/admin/dashboard';
+      } else if (user.role === 'vendor') {
+        redirectPath = '/vendor/dashboard';
+      }
+      
+      // Use navigate for client-side routing instead of window.location
+      navigate(redirectPath, { replace: true });
+      
     } catch (err) {
       console.error('Login error:', err);
-      setError(getFirebaseAuthErrorMessage(err.code) || 'Login failed. Please try again.');
+      // Clear the password field for security
+      setFormData(prev => ({ ...prev, password: '' }));
+      // Use the error message from the error object if available
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

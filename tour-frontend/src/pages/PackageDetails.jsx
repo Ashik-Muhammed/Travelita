@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -24,33 +24,42 @@ const PackageDetails = () => {
   const { currentUser } = useAuth();
   const { getPackageById, createBooking } = useData();
 
-  useEffect(() => {
-    const fetchPackage = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log(`Fetching package with ID: ${packageId}`);
-        
-        const packageData = await getPackageById(packageId);
-        
-        if (!packageData) {
-          throw new Error('Package not found');
-        }
-        
-        console.log("Package data received:", packageData);
-        setTourPackage(packageData);
-      } catch (err) {
-        console.error("Fetch package error:", err);
-        setError(err.message || "Failed to fetch package");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Memoize the fetch function to prevent unnecessary re-creations
+  const fetchPackage = useCallback(async () => {
+    if (!packageId) return;
     
-    if (packageId) {
-      fetchPackage();
+    try {
+      setLoading(true);
+      setError(null);
+      console.log(`Fetching package with ID: ${packageId}`);
+      
+      const packageData = await getPackageById(packageId);
+      
+      if (!packageData) {
+        throw new Error('Package not found');
+      }
+      
+      console.log("Package data received:", packageData);
+      setTourPackage(packageData);
+    } catch (err) {
+      console.error("Fetch package error:", err);
+      setError(err.message || "Failed to fetch package");
+    } finally {
+      setLoading(false);
     }
   }, [packageId, getPackageById]);
+
+  // Use a ref to track if we've already fetched the data
+  const hasFetched = useRef(false);
+
+  // Fetch package data when the component mounts or packageId changes
+  useEffect(() => {
+    // Only fetch if we haven't already fetched this package
+    if (packageId && !hasFetched.current) {
+      hasFetched.current = true;
+      fetchPackage();
+    }
+  }, [packageId, fetchPackage]);
 
   if (loading) {
     // Uses spinner from App.jsx / index.css

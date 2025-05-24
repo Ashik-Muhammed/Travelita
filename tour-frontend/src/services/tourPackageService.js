@@ -16,6 +16,10 @@ import {
 } from 'firebase/database';
 import { getFallbackImage } from '../utils/imageUtils';
 
+// Simple in-memory cache for package data
+const packageCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // Create a new tour package
 export const createPackage = async (packageData, imageFiles) => {
   try {
@@ -269,6 +273,13 @@ export const getPackageById = async (packageId) => {
     console.log('Invalid package ID provided:', packageId);
     return createFallbackPackage('invalid-id');
   }
+  
+  // Check cache first
+  const cached = packageCache.get(packageId);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    console.log('Returning cached package:', packageId);
+    return cached.data;
+  }
 
   try {
     console.log(`Attempting to fetch package with ID: ${packageId}`);
@@ -325,16 +336,29 @@ export const getPackageById = async (packageId) => {
         [getFallbackImage(packageData.images, 'travel', '800x600')]) :
       createFallbackPackage().images;
 
-    return { 
+    const result = { 
       id: packageId, 
       ...packageData,
       images: processedImages,
-      views: updatedViews // Return the updated view count
+      views: updatedViews
     };
+
+    // Cache the result
+    packageCache.set(packageId, {
+      data: result,
+      timestamp: Date.now()
+    });
+
+    return result;
   } catch (err) {
     console.error('Get package by ID error:', err.message || 'Unknown error');
     // Return a fallback package instead of throwing an error
-    return createFallbackPackage(packageId);
+    const fallback = createFallbackPackage(packageId);
+    packageCache.set(packageId, {
+      data: fallback,
+      timestamp: Date.now()
+    });
+    return fallback;
   }
 };
 

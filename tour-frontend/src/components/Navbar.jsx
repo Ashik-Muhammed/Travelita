@@ -6,9 +6,23 @@ import './Navbar.css'; // Import Navbar.css
 
 function Navbar() {
   // Get auth context for user information
-  const { currentUser, isAdmin, logout } = useAuth();
+  const { currentUser, isAdmin, isVendor, logout } = useAuth();
   const isAuthenticated = !!currentUser;
-  const userRole = currentUser?.role || (isAdmin ? 'admin' : 'user');
+  const userRole = currentUser?.role || (isAdmin ? 'admin' : (isVendor ? 'vendor' : 'user'));
+  
+  // Debug logs
+  useEffect(() => {
+    console.log('Navbar - Current User:', currentUser);
+    console.log('Navbar - isVendor:', isVendor);
+    console.log('Navbar - userRole:', userRole);
+  }, [currentUser, isVendor, userRole]);
+  
+  const handleBookingsClick = (e) => {
+    console.log('Bookings link clicked');
+    console.log('isVendor:', isVendor);
+    console.log('Navigating to:', isVendor ? '/vendor/bookings' : '/user/bookings');
+    handleMobileLinkClick(e);
+  };
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVendorMenuOpen, setIsVendorMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -130,7 +144,9 @@ function Navbar() {
   const handleLogoutClick = async () => {
     try {
       await logoutUser();
-      await logout();
+      if (typeof logout === 'function') {
+        await logout();
+      }
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
@@ -213,6 +229,11 @@ function Navbar() {
             </ul>
 
             <div className="navbar-auth-links">
+              {isAdmin && (
+                <Link to="/admin/dashboard" className="btn btn-admin" onClick={handleMobileLinkClick}>
+                  <i className="fas fa-shield-alt"></i> Admin
+                </Link>
+              )}
               {isAuthenticated ? (
                 <div className="user-menu-container">
                   <button 
@@ -231,13 +252,38 @@ function Navbar() {
                     </svg>
                   </button>
                   <div className={`user-dropdown-menu ${isUserMenuOpen ? 'show' : ''}`}>
-                    <Link to="/user/bookings" className={getLinkClass('/user/bookings')} onClick={handleMobileLinkClick}>My Bookings</Link>
-                    <Link to="/dashboard" className={getLinkClass('/dashboard')} onClick={handleMobileLinkClick}>My Dashboard</Link>
+                    <Link 
+                      to={
+                        isVendor 
+                          ? "/vendor/bookings" 
+                          : "/user/bookings"
+                      } 
+                      className={getLinkClass(
+                        isVendor 
+                          ? "/vendor/bookings" 
+                          : "/user/bookings"
+                      )} 
+                      onClick={handleBookingsClick}
+                    >
+                      <i className="fas fa-calendar"></i> My Bookings
+                    </Link>
+                    <Link to="/dashboard" className={getLinkClass('/dashboard')} onClick={handleMobileLinkClick}>
+                      <i className="fas fa-tachometer-alt"></i> My Dashboard
+                    </Link>
                     {userRole === 'vendor' && (
-                      <Link to="/vendor/dashboard" className={getLinkClass('/vendor/dashboard')} onClick={handleMobileLinkClick}>Vendor Dashboard</Link>
+                      <Link to="/vendor/dashboard" className={getLinkClass('/vendor/dashboard')} onClick={handleMobileLinkClick}>
+                        <i className="fas fa-store"></i> Vendor Dashboard
+                      </Link>
                     )}
                     {userRole === 'admin' && (
-                      <Link to="/admin/dashboard" className={getLinkClass('/admin/dashboard')} onClick={handleMobileLinkClick}>Admin Panel</Link>
+                      <Link to="/admin/dashboard" className={getLinkClass('/admin/dashboard')} onClick={handleMobileLinkClick}>
+                        <i className="fas fa-shield-alt"></i> Admin Dashboard
+                      </Link>
+                    )}
+                    {userRole === 'admin' && (
+                      <Link to="/admin/users" className={getLinkClass('/admin/users')} onClick={handleMobileLinkClick}>
+                        <i className="fas fa-users"></i> Manage Users
+                      </Link>
                     )}
                     <button onClick={handleLogoutClick} className="logout-button">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

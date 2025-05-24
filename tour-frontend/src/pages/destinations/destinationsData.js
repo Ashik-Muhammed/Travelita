@@ -1,5 +1,6 @@
-export const destinations = [
-  {
+// Convert array to object with slugs as keys
+export const destinations = {
+  goa: {
     id: 1,
     slug: 'bali',
     name: 'Bali',

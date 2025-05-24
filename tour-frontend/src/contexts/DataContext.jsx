@@ -1,11 +1,15 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { db, getDb } from '../config/firebase';
+import { getDatabase, ref, query, orderByChild, equalTo, get, set, update, serverTimestamp, push } from 'firebase/database';
 import * as tourPackageService from '../services/tourPackageService';
-import * as bookingService from '../services/bookingService';
 
 const DataContext = createContext();
 
-export const useData = () => useContext(DataContext);
+// Define the hook separately for better Fast Refresh support
+const useData = () => useContext(DataContext);
+
+export { useData };
 
 export const DataProvider = ({ children }) => {
   const { currentUser, isAdmin } = useAuth() || { currentUser: null, isAdmin: false };
@@ -74,7 +78,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  const getPackageById = async (packageId) => {
+  const getPackageById = useCallback(async (packageId) => {
     setLoading(true);
     setError(null);
     try {
@@ -86,7 +90,7 @@ export const DataProvider = ({ children }) => {
       setLoading(false);
       throw err;
     }
-  };
+  }, []); // Empty dependency array as we don't use any external values
 
   const updatePackage = async (packageId, updates, imageFiles) => {
     setLoading(true);
@@ -137,32 +141,124 @@ export const DataProvider = ({ children }) => {
     try {
       if (!currentUser) throw new Error('You must be logged in');
       
+      const database = getDatabase();
+      if (!database) throw new Error('Database not initialized');
+      
       // Ensure we have the correct user ID format
       const userId = currentUser.uid || currentUser.id || 'anonymous';
       
-      const result = await bookingService.createBooking({
+      // Create a new booking object with required fields
+      const newBooking = {
         ...bookingData,
-        userId: userId
-      });
+        userId: userId,
+        status: 'pending',
+        paymentStatus: 'pending',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      // Add the booking to the database
+      const bookingsRef = ref(database, 'bookings');
+      const newBookingRef = push(bookingsRef);
+      await set(newBookingRef, newBooking);
+      
+      // Get the ID of the newly created booking
+      const bookingId = newBookingRef.key;
+      
       setLoading(false);
-      return result;
+      return { id: bookingId, ...newBooking };
     } catch (err) {
+      console.error('Error creating booking:', err);
       setError(err.message);
       setLoading(false);
       throw err;
     }
   };
 
-  const getUserBookings = async () => {
+  const getUserBookings = async (userId) => {
     setLoading(true);
     setError(null);
     try {
       if (!currentUser) throw new Error('You must be logged in');
       
-      const result = await bookingService.getUserBookings(currentUser.id);
+      const database = getDatabase();
+      if (!database) throw new Error('Database not initialized');
+      
+      const bookingsRef = ref(database, 'bookings');
+      const userBookingsQuery = query(
+        bookingsRef,
+        orderByChild('userId'),
+        equalTo(userId || currentUser.uid)
+      );
+      
+      const snapshot = await get(userBookingsQuery);
+      const bookings = [];
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          bookings.push({
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          });
+        });
+      }
+      
+      // Sort by creation date (newest first)
+      bookings.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA;
+      });
+      
       setLoading(false);
-      return result;
+      return bookings;
     } catch (err) {
+      console.error('Error fetching user bookings:', err);
+      setError(err.message);
+      setLoading(false);
+      throw err;
+    }
+  };
+  
+  const getVendorBookings = async (vendorId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (!currentUser) throw new Error('You must be logged in');
+      
+      const database = getDatabase();
+      if (!database) throw new Error('Database not initialized');
+      
+      const bookingsRef = ref(database, 'bookings');
+      const vendorBookingsQuery = query(
+        bookingsRef,
+        orderByChild('vendorId'),
+        equalTo(vendorId || currentUser.uid)
+      );
+      
+      const snapshot = await get(vendorBookingsQuery);
+      const bookings = [];
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          bookings.push({
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          });
+        });
+      }
+      
+      // Sort by creation date (newest first)
+      bookings.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA;
+      });
+      
+      setLoading(false);
+      return bookings;
+    } catch (err) {
+      console.error('Error fetching vendor bookings:', err);
       setError(err.message);
       setLoading(false);
       throw err;
@@ -175,14 +271,30 @@ export const DataProvider = ({ children }) => {
     try {
       if (!currentUser) throw new Error('You must be logged in');
       
-      const result = await bookingService.getBookingById(
-        bookingId,
-        currentUser.id,
-        isAdmin
-      );
+      const database = getDatabase();
+      if (!database) throw new Error('Database not initialized');
+      
+      const bookingRef = ref(database, `bookings/${bookingId}`);
+      const snapshot = await get(bookingRef);
+      
+      if (!snapshot.exists()) {
+        throw new Error('Booking not found');
+      }
+      
+      const booking = snapshot.val();
+      
+      // Check if the user has permission to view this booking
+      const isOwner = booking.userId === currentUser.uid || booking.userId === currentUser.id;
+      const isVendor = booking.vendorId === currentUser.uid || booking.vendorId === currentUser.id;
+      
+      if (!isOwner && !isVendor && !isAdmin) {
+        throw new Error('You do not have permission to view this booking');
+      }
+      
       setLoading(false);
-      return result;
+      return { id: snapshot.key, ...booking };
     } catch (err) {
+      console.error('Error fetching booking:', err);
       setError(err.message);
       setLoading(false);
       throw err;
@@ -196,37 +308,77 @@ export const DataProvider = ({ children }) => {
       if (!currentUser) throw new Error('You must be logged in');
       if (!isAdmin) throw new Error('You must be an admin');
       
-      const result = await bookingService.updateBookingStatus(
-        bookingId,
-        status,
-        currentUser.id,
-        isAdmin
-      );
+      const database = getDatabase();
+      if (!database) throw new Error('Database not initialized');
+      
+      const bookingRef = ref(database, `bookings/${bookingId}`);
+      const snapshot = await get(bookingRef);
+      
+      if (!snapshot.exists()) {
+        throw new Error('Booking not found');
+      }
+      
+      await update(bookingRef, {
+        status: status,
+        updatedAt: serverTimestamp()
+      });
+      
       setLoading(false);
-      return result;
+      return { id: bookingId, ...snapshot.val(), status };
     } catch (err) {
+      console.error('Error updating booking status:', err);
       setError(err.message);
       setLoading(false);
       throw err;
     }
   };
 
-  const updatePaymentStatus = async (bookingId, paymentStatus, paymentDetails) => {
+  const updatePaymentStatus = async (bookingId, paymentStatus, paymentDetails = {}) => {
     setLoading(true);
     setError(null);
     try {
       if (!currentUser) throw new Error('You must be logged in');
       
-      const result = await bookingService.updatePaymentStatus(
-        bookingId,
-        paymentStatus,
-        paymentDetails,
-        currentUser.id,
-        isAdmin
-      );
+      const database = getDatabase();
+      if (!database) throw new Error('Database not initialized');
+      
+      const bookingRef = ref(database, `bookings/${bookingId}`);
+      const snapshot = await get(bookingRef);
+      
+      if (!snapshot.exists()) {
+        throw new Error('Booking not found');
+      }
+      
+      const booking = snapshot.val();
+      
+      // Check if the user has permission to update this booking
+      const isOwner = booking.userId === currentUser.uid || booking.userId === currentUser.id;
+      const isVendor = booking.vendorId === currentUser.uid || booking.vendorId === currentUser.id;
+      
+      if (!isOwner && !isVendor && !isAdmin) {
+        throw new Error('You do not have permission to update this booking');
+      }
+      
+      const updates = {
+        paymentStatus: paymentStatus,
+        updatedAt: serverTimestamp()
+      };
+      
+      // Add payment details if provided
+      if (paymentDetails) {
+        updates.paymentDetails = {
+          ...(booking.paymentDetails || {}),
+          ...paymentDetails,
+          updatedAt: serverTimestamp()
+        };
+      }
+      
+      await update(bookingRef, updates);
+      
       setLoading(false);
-      return result;
+      return { id: bookingId, ...booking, ...updates };
     } catch (err) {
+      console.error('Error updating payment status:', err);
       setError(err.message);
       setLoading(false);
       throw err;
@@ -239,14 +391,42 @@ export const DataProvider = ({ children }) => {
     try {
       if (!currentUser) throw new Error('You must be logged in');
       
-      const result = await bookingService.cancelBooking(
-        bookingId,
-        currentUser.id,
-        isAdmin
-      );
+      const database = getDatabase();
+      if (!database) throw new Error('Database not initialized');
+      
+      const bookingRef = ref(database, `bookings/${bookingId}`);
+      const snapshot = await get(bookingRef);
+      
+      if (!snapshot.exists()) {
+        throw new Error('Booking not found');
+      }
+      
+      const booking = snapshot.val();
+      
+      // Check if the user has permission to cancel this booking
+      const isOwner = booking.userId === currentUser.uid || booking.userId === currentUser.id;
+      const isVendor = booking.vendorId === currentUser.uid || booking.vendorId === currentUser.id;
+      
+      if (!isOwner && !isVendor && !isAdmin) {
+        throw new Error('You do not have permission to cancel this booking');
+      }
+      
+      // Update the booking status to cancelled
+      await update(bookingRef, {
+        status: 'cancelled',
+        cancelledAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
       setLoading(false);
-      return result;
+      return { 
+        id: bookingId, 
+        ...booking, 
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString()
+      };
     } catch (err) {
+      console.error('Error cancelling booking:', err);
       setError(err.message);
       setLoading(false);
       throw err;
@@ -287,6 +467,7 @@ export const DataProvider = ({ children }) => {
     // Booking functions
     createBooking,
     getUserBookings,
+    getVendorBookings,
     getBookingById,
     updateBookingStatus,
     updatePaymentStatus,

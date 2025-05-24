@@ -11,7 +11,7 @@ function AboutUs() {
       name: 'Sarah Johnson',
       role: 'Adventure Traveler',
       quote: 'Travelita made our family trip to Kerala absolutely magical! The guides were knowledgeable and everything was perfectly organized.',
-      image: '/images/testimonials/sarah.jpg',
+      image: 'images/testimonials/sarah.jpg',
       fallbackImage: 'https://randomuser.me/api/portraits/women/44.jpg',
       rating: 5
     },
@@ -20,7 +20,7 @@ function AboutUs() {
       name: 'Michael Chen',
       role: 'Business Traveler',
       quote: 'As a frequent business traveler, I appreciate the efficiency and reliability of Travelita. Their attention to detail makes every trip smooth.',
-      image: '/images/testimonials/michael.jpg',
+      image: 'images/testimonials/michael.jpg',
       fallbackImage: 'https://randomuser.me/api/portraits/men/32.jpg',
       rating: 5
     },
@@ -29,7 +29,7 @@ function AboutUs() {
       name: 'Emma Rodriguez',
       role: 'Solo Traveler',
       quote: 'I felt safe and supported throughout my solo journey across India. The local experiences Travelita arranged were authentic and unforgettable.',
-      image: '/images/testimonials/emma.jpg',
+      image: 'images/testimonials/emma.jpg',
       fallbackImage: 'https://randomuser.me/api/portraits/women/68.jpg',
       rating: 5
     }

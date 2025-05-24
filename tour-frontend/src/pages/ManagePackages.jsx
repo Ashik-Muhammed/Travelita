@@ -267,9 +267,13 @@ function ManagePackages() {
                     className="h-full w-full object-cover"
                     src={pkg.images && pkg.images.length > 0 
                       ? pkg.images[0]
-                      : 'https://via.placeholder.com/300x200?text=No+Image'
+                      : 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
                     }
                     alt={pkg.title || 'Tour Package'}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                    }}
                   />
                   <div className="absolute top-0 right-0 mt-2 mr-2">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

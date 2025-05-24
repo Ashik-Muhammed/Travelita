@@ -17,7 +17,7 @@ const samplePackages = [
       { day: 4, title: 'Free Day', description: 'Free day to explore on your own.' },
       { day: 5, title: 'Departure', description: 'Check-out and departure.' }
     ],
-    images: ['https://via.placeholder.com/800x600?text=Beach+Paradise'],
+    images: ['https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80'],
     available: true,
     featured: true,
     status: 'approved',
@@ -42,7 +42,7 @@ const samplePackages = [
       { day: 6, title: 'Final Descent', description: 'Complete the trek back to base.' },
       { day: 7, title: 'Departure', description: 'Return to city and departure.' }
     ],
-    images: ['https://via.placeholder.com/800x600?text=Mountain+Adventure'],
+    images: ['https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80'],
     available: true,
     featured: true,
     status: 'approved',
@@ -66,7 +66,7 @@ const samplePackages = [
       { day: 5, title: 'Handicrafts', description: 'Visit local markets and handicraft centers.' },
       { day: 6, title: 'Departure', description: 'Check-out and departure.' }
     ],
-    images: ['https://via.placeholder.com/800x600?text=Cultural+Heritage'],
+    images: ['https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80'],
     available: true,
     featured: true,
     status: 'approved',
@@ -88,7 +88,7 @@ const samplePackages = [
       { day: 3, title: 'Tea Gardens', description: 'Visit tea plantations and spice gardens.' },
       { day: 4, title: 'Departure', description: 'Check-out and departure.' }
     ],
-    images: ['https://via.placeholder.com/800x600?text=Budget+Backpacking'],
+    images: ['https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80'],
     available: true,
     featured: true,
     status: 'approved',
@@ -111,7 +111,7 @@ const samplePackages = [
       { day: 4, title: 'Evening Safari', description: 'Evening safari for nocturnal animals.' },
       { day: 5, title: 'Departure', description: 'Final safari and departure.' }
     ],
-    images: ['https://via.placeholder.com/800x600?text=Wildlife+Safari'],
+    images: ['https://images.unsplash.com/photo-1499678329025-4b2e7e3a9d8f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80'],
     available: true,
     featured: true,
     status: 'approved',
@@ -137,7 +137,7 @@ const samplePackages = [
       { day: 7, title: 'Free Day', description: 'Free day to relax or explore.' },
       { day: 8, title: 'Departure', description: 'Check-out and departure.' }
     ],
-    images: ['https://via.placeholder.com/800x600?text=Island+Hopping'],
+    images: ['https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80'],
     available: true,
     featured: true,
     status: 'approved',

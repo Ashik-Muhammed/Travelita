@@ -25,10 +25,22 @@ function Home() {
   const destinationsSectionRef = useRef(null);
   const whyChooseSectionRef = useRef(null);
 
-  // Helper function to get the correct image URL
-  const getImageUrl = (imageUrl) => {
-    if (!imageUrl) return 'https://source.unsplash.com/random/300x200/?travel';
-    return imageUrl;
+  // Array of different travel images for packages
+  const travelImages = [
+    '1501785888041-af3ef285b470', // Beach
+    '1476514525535-07fb3b4ae5f1', // Train tracks
+    '1470071459604-3b5ec3a7fe05', // Mountains
+    '1475924156734-496f6cac6ec1', // Forest
+    '1499678329025-4b2e7e3a9d8f', // Desert
+    '1501785888041-af3ef285b470', // Cityscape
+    '1501785888041-af3ef285b470'  // Waterfall
+  ];
+
+  // Function to get a unique image URL for each package
+  const getImageUrl = (imageUrl, index = 0) => {
+    if (imageUrl) return imageUrl;
+    const imageId = travelImages[index % travelImages.length];
+    return `https://images.unsplash.com/photo-${imageId}?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&h=600&q=80`;
   };
 
   // Scroll animation observer
@@ -105,7 +117,7 @@ function Home() {
       <section className="hero-section">
         <div className="container">
           <h1>Discover <span style={{ color: 'var(--primary-color)' }}>Amazing</span> Places</h1>
-          <p className="hero-subtitle">
+          <p className="hero-subtitle" style={{ color: 'white', textAlign: 'center' }}>
             Explore curated tour packages for unforgettable experiences. Find your next adventure with us!
           </p>
           <div className="hero-buttons">
@@ -133,12 +145,21 @@ function Home() {
             </div>
           ) : (
             <div className="featured-packages-grid">
-              {featuredPackages.map((pkg) => (
+              {featuredPackages.map((pkg, index) => (
                 <div key={pkg.id} className="card package-card">
-                  <img 
-                    src={pkg.imageUrl || 'https://source.unsplash.com/random/300x200/?travel'}
-                    alt={pkg.title}
-                  />
+                  <div className="image-container">
+                    <img 
+                      src={getImageUrl(pkg.imageUrl, index)}
+                      alt={pkg.title || 'Travel destination'}
+                      className="package-image"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        // Fallback to first image in case of error
+                        e.target.src = `https://images.unsplash.com/photo-${travelImages[0]}?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&h=600&q=80`;
+                      }}
+                    />
+                  </div>
                   <div className="package-card-content">
                     <h3 className="package-card-title">{pkg.title}</h3>
                     <p className="package-card-destination"><IconPin /> {pkg.destination}</p>
@@ -169,18 +190,39 @@ function Home() {
             <h2 className="page-section-title">Popular Destinations</h2>
           </div>
           <div className="popular-destinations-grid">
-            {destinations.map((destination) => (
-              <Link key={destination} to={`/packages/destination/${destination}`} className="destination-card">
-                <img 
-                  src={`https://source.unsplash.com/featured/600x400?${destination},travel`}
-                  alt={destination}
-                />
-                <div className="destination-card-overlay">
-                  <h3>{destination}</h3>
-                  <span>Explore</span>
-                </div>
-              </Link>
-            ))}
+            {destinations.map((destination, index) => {
+              // Array of different Unsplash image IDs for destinations
+              const destinationImages = [
+                '1501785888041-af3ef285b470', // Beach
+                '1476514525535-07fb3b4ae5f1', // Train tracks
+                '1470071459604-3b5ec3a7fe05', // Mountains
+                '1475924156734-496f6cac6ec1', // Forest
+                '1499678329025-4b2e7e3a9d8f', // Desert
+                '1501785888041-af3ef285b470', // Cityscape
+                '1501785888041-af3ef285b470'  // Waterfall
+              ];
+              
+              // Get image based on index, fallback to first image
+              const imageId = destinationImages[index % destinationImages.length];
+              const imageUrl = `https://images.unsplash.com/photo-${imageId}?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80`;
+              
+              return (
+                <Link key={destination} to={`/packages/destination/${destination}`} className="destination-card">
+                  <img 
+                    src={imageUrl}
+                    alt={destination}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80';
+                    }}
+                  />
+                  <div className="destination-card-overlay">
+                    <h3>{destination}</h3>
+                    <span>Explore</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
           <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
             <Link to="/destinations" className="btn btn-secondary">View All Destinations</Link>

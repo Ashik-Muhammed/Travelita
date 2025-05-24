@@ -56,17 +56,26 @@ const VendorRegister = () => {
         formData.email,
         formData.password
       );
-      
+
       const user = userCredential.user;
-      
-      // Save vendor data to Realtime Database
+
+      // Save additional user data to Realtime Database
       const vendorData = {
-        ...registrationData,
-        uid: user.uid,
+        name: formData.name,
+        email: formData.email,
+        companyName: formData.companyName,
+        phone: formData.phone,
+        address: formData.address,
         role: 'vendor',
-        approved: false, // Vendors need approval before they can create packages
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
+      
+      // Save to Realtime Database
+      await set(ref(rtdb, `users/${user.uid}`), vendorData);
+      
+      setSuccess(true);
+      setLoading(false);
+      navigate('/vendor/dashboard');
       
       // Save to vendors collection in Realtime Database
       await set(ref(rtdb, `vendors/${user.uid}`), vendorData);

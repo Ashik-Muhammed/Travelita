@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '../config/firebase';
-import { signOut } from 'firebase/auth';
+import { auth, db } from '../config/firebase';
+import { signOut, updateProfile } from 'firebase/auth';
+import { ref as dbRef, set, get } from 'firebase/database';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import './Dashboard.css';
@@ -10,8 +11,26 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    displayName: '',
+    photoFile: null
+  });
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [updateError, setUpdateError] = useState('');
+  const [updateSuccess, setUpdateSuccess] = useState('');
+  
   const navigate = useNavigate();
-  const { currentUser, logout, isLoading: authLoading } = useAuth();
+  const { currentUser, isLoading: authLoading, refreshUser } = useAuth();
+  const [localPhoto, setLocalPhoto] = useState('');
+  
+  // Keep local photo in sync with currentUser
+  useEffect(() => {
+    if (currentUser?.photoURL) {
+      setLocalPhoto(currentUser.photoURL);
+      setPhotoPreview(currentUser.photoURL);
+    }
+  }, [currentUser?.photoURL]);
   const { getUserBookings } = useData();
 
   useEffect(() => {
@@ -41,18 +60,178 @@ const Dashboard = () => {
     }
   }, [navigate, currentUser, getUserBookings, authLoading]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
-      // Use Firebase signOut directly instead of the logout function
       await signOut(auth);
-      // Clear any user data from localStorage
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      localStorage.removeItem('vendorInfo');
-      console.log('User logged out successfully');
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
+    }
+  }, [navigate]);
+
+  // Helper function to convert file to base64
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleEditProfile = () => {
+    try {
+      setFormData({
+        displayName: currentUser?.displayName || '',
+        photoFile: null
+      });
+      
+      // Set photo preview from current user data
+      setPhotoPreview(currentUser?.photoURL || '');
+      setIsEditing(true);
+    } catch (err) {
+      console.error('Error loading profile data:', err);
+      setUpdateError('Failed to load profile data');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setUpdateError('');
+    setUpdateSuccess('');
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData(prev => ({
+      ...prev,
+      photoFile: null
+    }));
+    setPhotoPreview('');
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setUpdateError('Please upload an image file');
+      return;
+    }
+
+    // Check file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setUpdateError('Image size should be less than 5MB');
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      photoFile: file
+    }));
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result);
+      setUpdateError('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setUpdateError('');
+    setUpdateSuccess('');
+    
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      // Prepare updates for auth and database
+      const authUpdates = {};
+      const dbUpdates = {
+        email: user.email,
+        lastUpdated: Date.now()
+      };
+      
+      // Handle display name update
+      const newDisplayName = formData.displayName.trim();
+      if (newDisplayName && newDisplayName !== (user.displayName || '')) {
+        authUpdates.displayName = newDisplayName;
+        dbUpdates.displayName = newDisplayName;
+      }
+      
+      // Handle photo URL update
+      if (formData.photoFile) {
+        // For new photos, convert to base64 and store in database
+        const base64Image = await convertToBase64(formData.photoFile);
+        dbUpdates.photoURL = base64Image;
+      } else if (photoPreview === '') {
+        // If photo was removed
+        dbUpdates.photoURL = '';
+      } else if (photoPreview && photoPreview !== currentUser?.photoURL) {
+        // If it's an existing preview (from editing)
+        dbUpdates.photoURL = photoPreview;
+      }
+      
+      // Update auth profile first (only non-photo updates)
+      if (Object.keys(authUpdates).length > 0) {
+        console.log('Updating auth with:', authUpdates);
+        await updateProfile(user, authUpdates);
+      }
+      
+      // Then update the database with all user data
+      console.log('Updating database with:', dbUpdates);
+      await db.set(`users/${user.uid}`, dbUpdates);
+      
+      // Update the auth profile with display name if it changed
+      if (authUpdates.displayName) {
+        await updateProfile(user, { displayName: authUpdates.displayName });
+      }
+      
+      setUpdateSuccess('Profile updated successfully!');
+      
+      // Update local state to reflect changes
+      setFormData({
+        displayName: newDisplayName,
+        photoFile: null
+      });
+      
+      // Force refresh the user data
+      if (refreshUser) {
+        // First update the local state
+        const refreshedUser = await refreshUser();
+        // Then update the photo preview with the latest data
+        if (refreshedUser?.photoURL) {
+          setPhotoPreview(refreshedUser.photoURL);
+        }
+      }
+      
+      // Close edit mode after a short delay
+      setTimeout(() => {
+        setIsEditing(false);
+        setUpdateSuccess('');
+      }, 2000);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      console.error('Error details:', {
+        code: err.code,
+        message: err.message,
+        stack: err.stack
+      });
+      setUpdateError(`Failed to update profile. ${err.message || 'Please try again.'}`);
     }
   };
 
@@ -90,23 +269,113 @@ const Dashboard = () => {
           {/* Profile Section */}
           <div className="dashboard-card profile-card">
             <h2>My Profile</h2>
-            <div className="profile-info">
-              <div className="profile-avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="profile-details">
-                <p><strong>Name:</strong> {currentUser?.displayName || 'Not set'}</p>
-                <p><strong>Email:</strong> {currentUser?.email}</p>
-                <p><strong>Role:</strong> {currentUser?.role || 'user'}</p>
-                <p><strong>Member Since:</strong> {currentUser?.metadata?.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown'}</p>
-              </div>
-            </div>
-            <div className="profile-actions">
-              <button className="btn btn-outline">Edit Profile</button>
-              <button onClick={handleLogout} className="btn btn-danger">Logout</button>
-            </div>
+            {isEditing ? (
+              <form onSubmit={handleProfileUpdate} className="profile-edit-form">
+                <div className="form-group">
+                  <label htmlFor="displayName">Display Name</label>
+                  <input
+                    type="text"
+                    id="displayName"
+                    name="displayName"
+                    value={formData.displayName}
+                    onChange={handleInputChange}
+                    className="form-control"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="profilePhoto">Profile Photo</label>
+                  <div className="profile-photo-upload">
+                    <div className="photo-preview">
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Profile preview" className="preview-image" />
+                      ) : (
+                        <div className="photo-placeholder">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="file-input-container">
+                      <input
+                        type="file"
+                        id="profilePhoto"
+                        name="profilePhoto"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="file-input"
+                      />
+                      <label htmlFor="profilePhoto" className="btn btn-outline">
+                        {formData.photoFile ? 'Change Photo' : 'Upload Photo'}
+                      </label>
+                      {formData.photoFile && (
+                        <button 
+                          type="button" 
+                          className="btn btn-text"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, photoFile: null }));
+                            setPhotoPreview(currentUser?.photoURL || '');
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {updateError && <div className="alert alert-danger">{updateError}</div>}
+                {updateSuccess && <div className="alert alert-success">{updateSuccess}</div>}
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary">Save Changes</button>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div className="profile-info">
+                  <div className="profile-avatar">
+                    {localPhoto ? (
+                      <img 
+                        src={localPhoto} 
+                        alt={currentUser?.displayName || 'User'} 
+                        className="profile-image"
+                        onError={(e) => {
+                          // Fallback to default avatar if image fails to load
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'block';
+                        }}
+                      />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" style={{display: localPhoto ? 'none' : 'block'}} />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="profile-details">
+                    <p><strong>Name:</strong> {currentUser?.displayName || 'Not set'}</p>
+                    <p><strong>Email:</strong> {currentUser?.email}</p>
+                    <p><strong>Role:</strong> {currentUser?.role || 'user'}</p>
+                    <p><strong>Member Since:</strong> {currentUser?.metadata?.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown'}</p>
+                  </div>
+                </div>
+                <div className="profile-actions">
+                  <button 
+                    className="btn btn-outline" 
+                    onClick={handleEditProfile}
+                  >
+                    Edit Profile
+                  </button>
+                  <button onClick={handleLogout} className="btn btn-danger">Logout</button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Bookings Section */}

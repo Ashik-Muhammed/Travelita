@@ -36,24 +36,34 @@ const Register = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true);
 
     // Basic validation
     if (!formData.name || !formData.email || !formData.password) {
       setError('All fields are required.');
+      setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long.');
+      setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
-      await registerUser(formData.name, formData.email, formData.password);
-      setSuccess('Registration successful! Please login.');
-      setFormData({ name: '', email: '', password: '', role: 'user' });
-      setTimeout(() => navigate('/login'), 2000);
+      // Register user with name, email, and password
+      const result = await registerUser(formData.name, formData.email, formData.password);
+      
+      if (result && result.user) {
+        setSuccess('Registration successful! Redirecting to dashboard...');
+        setLoading(false);
+        navigate('/dashboard');
+      } else {
+        setSuccess('Registration successful! Please login.');
+        setFormData({ name: '', email: '', password: '', role: 'user' });
+        setTimeout(() => navigate('/login'), 2000);
+      }
     } catch (err) {
       console.error('Registration error:', err);
       setError(getFirebaseAuthErrorMessage(err.code) || 'Registration failed. Please try again.');

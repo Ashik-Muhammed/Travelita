@@ -73,8 +73,12 @@ function TopPackages() {
                 <img 
                   src={pkg.images && pkg.images.length > 0 
                     ? pkg.images[0] 
-                    : 'https://via.placeholder.com/300x200?text=No+Image'} 
-                  alt={pkg.title} 
+                    : 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'} 
+                  alt={pkg.title}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                  }}
                 />
                 <div className="package-card-content">
                   <h3 className="package-card-title">{pkg.title}</h3>

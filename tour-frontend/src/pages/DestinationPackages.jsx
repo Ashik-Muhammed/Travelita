@@ -132,8 +132,12 @@ function DestinationPackages() {
                   <div className="package-image-container">
                     <img
                       className="package-image"
-                      src={pkg.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}
+                      src={pkg.imageUrl || 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}
                       alt={pkg.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                      }}
                     />
                   </div>
                   <div className="package-content">

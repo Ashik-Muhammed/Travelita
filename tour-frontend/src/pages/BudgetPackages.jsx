@@ -46,7 +46,7 @@ function BudgetPackages() {
     <div className="package-list-page">
       <div className="page-title-bar" style={{ backgroundColor: 'var(--success-color-dark)' /* Alt color for budget */ }}>
         <div className="container">
-          <h1>Budget-Friendly Tours</h1>
+          <h1 style={{ color: 'black' }}>Budget-Friendly Tours</h1>
           <p style={{ marginTop: '0.5rem', fontSize: '1.1rem', opacity: '0.9' }}>
             Amazing travel experiences that won't break the bank!
           </p>

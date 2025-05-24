@@ -199,8 +199,12 @@ function BookingPage() {
               <img 
                 src={tourPackage.images && tourPackage.images.length > 0 
                   ? tourPackage.images[0] 
-                  : 'https://via.placeholder.com/300x200?text=No+Image'} 
-                alt={tourPackage.title} 
+                  : 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'} 
+                alt={tourPackage.title}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                }}
               />
             </div>
             <div className="package-info">
