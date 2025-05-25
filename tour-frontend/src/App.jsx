@@ -40,6 +40,7 @@ const PackageDetails = lazy(() => import('./pages/PackageDetails'));
 const Bookings = lazy(() => import('./pages/Bookings').then(module => ({ default: module.Bookings })));
 const AddPackage = lazy(() => import('./pages/AddPackage'));
 const AllPackages = lazy(() => import('./pages/AllPackages'));
+const AllPackagesPage = lazy(() => import('./pages/AllPackagesPage'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
@@ -441,9 +442,14 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
-                  <Route path="/packages/:packageId" element={<PackageDetails />} />
+                  <Route path="/packages/:packageId" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <PackageDetails />
+                    </Suspense>
+                  } />
+                  <Route path="/packages" element={<AllPackagesPage />} />
+                  <Route path="/packages/old" element={<AllPackages />} />
                   <Route path="/packages/top" element={<TopPackages />} />
-                  <Route path="/packages/budget" element={<BudgetPackages />} />
                   <Route path="/packages/destination/:destination" element={<DestinationPackages />} />
                   <Route path="/destinations" element={<PopularDestinations />} />
                   <Route path="/about" element={<AboutUs />} />
@@ -478,9 +484,11 @@ function App() {
                       </Suspense>
                     </ProtectedRoute>
                   } />
-                  <Route path="/packages/:packageId/book" element={
+                  <Route path="/book/:packageId" element={
                     <ProtectedRoute>
-                      <BookingPage />
+                      <Suspense fallback={<LoadingFallback />}>
+                        <BookingPage />
+                      </Suspense>
                     </ProtectedRoute>
                   } />
 

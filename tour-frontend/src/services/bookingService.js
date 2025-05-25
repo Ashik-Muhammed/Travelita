@@ -214,14 +214,122 @@ export const cancelBooking = async (bookingId, userId, isAdmin) => {
     }
     
     // Update booking status to cancelled
-    await update(bookingRef, { 
+    const updates = {
       status: 'cancelled',
-      updatedAt: new Date().toISOString() 
-    });
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Track who cancelled the booking
+    if (isAdmin) {
+      updates.cancelledBy = 'admin';
+    } else {
+      updates.cancelledBy = 'user';
+    }
+    
+    await update(bookingRef, updates);
     
     return { success: true };
   } catch (error) {
     console.error('Cancel booking error:', error);
+    throw error;
+  }
+};
+
+// Complete a booking (mark as completed)
+export const completeBooking = async (bookingId, userId, isAdmin = false) => {
+  try {
+    const bookingRef = ref(rtdb, `bookings/${bookingId}`);
+    const snapshot = await get(bookingRef);
+    
+    if (!snapshot.exists()) {
+      throw new Error('Booking not found');
+    }
+    
+    const booking = snapshot.val();
+    
+    // Check permissions - only vendor or admin can complete a booking
+    if (booking.vendorId !== userId && !isAdmin) {
+      throw new Error('Unauthorized to complete this booking');
+    }
+    
+    // Update booking status
+    await update(bookingRef, {
+      status: 'completed',
+      updatedAt: serverTimestamp(),
+      completedAt: serverTimestamp(),
+      completedBy: isAdmin ? 'admin' : 'vendor',
+      completedById: userId
+    });
+    
+    return { id: bookingId, ...booking, status: 'completed' };
+  } catch (error) {
+    console.error('Complete booking error:', error);
+    throw error;
+  }
+};
+
+// Confirm a booking (vendor or admin)
+export const confirmBooking = async (bookingId, userId, isAdmin = false) => {
+  try {
+    console.log('Confirming booking:', { bookingId, userId, isAdmin });
+    
+    const bookingRef = ref(rtdb, `bookings/${bookingId}`);
+    const snapshot = await get(bookingRef);
+    
+    if (!snapshot.exists()) {
+      throw new Error('Booking not found');
+    }
+    
+    const booking = snapshot.val();
+    console.log('Booking data:', booking);
+    
+    // Debug: Log all booking properties
+    console.log('Booking properties:', Object.keys(booking));
+    
+    // Check if vendorId exists and is a valid string
+    if (!booking.vendorId) {
+      throw new Error('Booking does not have a valid vendor ID');
+    }
+    
+    console.log('Comparing vendor IDs:', {
+      bookingVendorId: booking.vendorId,
+      currentUserId: userId,
+      isAdmin,
+      types: {
+        bookingVendorId: typeof booking.vendorId,
+        userId: typeof userId
+      }
+    });
+    
+    // Check if booking is cancelled by admin
+    if (booking.status === 'cancelled' && booking.cancelledBy === 'admin') {
+      throw new Error('This booking has been cancelled by an admin and cannot be confirmed.');
+    }
+    
+    // Check permissions - either admin or the vendor who owns the package
+    if (!isAdmin && booking.vendorId !== userId) {
+      throw new Error(`Unauthorized: You (${userId}) are not the vendor (${booking.vendorId}) of this package`);
+    }
+    
+    // Update the booking status
+    const updates = {
+      status: 'confirmed',
+      confirmedAt: serverTimestamp(),
+      confirmedBy: isAdmin ? 'admin' : 'vendor',
+      confirmedById: userId,
+      updatedAt: serverTimestamp()
+    };
+    
+    console.log('Updating booking with:', updates);
+    await update(bookingRef, updates);
+    
+    return { success: true, id: bookingId };
+  } catch (error) {
+    console.error('Error confirming booking:', {
+      error,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 };

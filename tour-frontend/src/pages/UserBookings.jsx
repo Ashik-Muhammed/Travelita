@@ -165,31 +165,51 @@ function UserBookings() {
                   />
                 </div>
                 <div className="booking-details">
-                  <h2 className="booking-title">{booking.packageName}</h2>
+                  <div className="booking-header">
+                    <h2 className="booking-title">{booking.packageName || 'Tour Package'}</h2>
+                    <span className={`status-badge ${getStatusClass(booking.status)}`}>
+                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                    </span>
+                  </div>
+                  
                   <div className="booking-meta">
-                    <div className="booking-date">
+                    <div className="meta-item">
+                      <span className="meta-label">Booking ID:</span>
+                      <span className="meta-value">{booking.id.substring(0, 8)}</span>
+                    </div>
+                    <div className="meta-item">
                       <span className="meta-label">Travel Date:</span>
-                      <span className="meta-value">{formatDate(booking.date)}</span>
+                      <span className="meta-value">{formatDate(booking.startDate || booking.date)}</span>
+                      {booking.endDate && (
+                        <span className="meta-value"> to {formatDate(booking.endDate)}</span>
+                      )}
                     </div>
-                    <div className="booking-travelers">
+                    <div className="meta-item">
                       <span className="meta-label">Travelers:</span>
-                      <span className="meta-value">{booking.travelers}</span>
+                      <span className="meta-value">{booking.guests || booking.travelers || 1} person(s)</span>
+                    </div>
+                    <div className="meta-item">
+                      <span className="meta-label">Total Amount:</span>
+                      <span className="meta-value price">₹{booking.totalPrice?.toLocaleString() || '0.00'}</span>
                     </div>
                   </div>
-                  <div className="booking-price">
-                    <span className="meta-label">Total Amount:</span>
-                    <span className="meta-value price">₹{booking.totalPrice}</span>
-                  </div>
-                  <div className="booking-status-row">
+                  
+                  <div className="booking-footer">
                     <div className="booking-created">
                       <span className="meta-label">Booked on:</span>
                       <span className="meta-value">{formatDate(booking.createdAt)}</span>
                     </div>
-                    <div className="booking-status">
-                      <span className={`status-badge ${getStatusClass(booking.status)}`}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                      </span>
-                    </div>
+                    
+                    {booking.confirmedAt && (
+                      <div className="confirmation-details">
+                        <span className="meta-label">
+                          {booking.confirmedBy === 'admin' ? 'Confirmed by Admin' : 'Confirmed by Vendor'}:
+                        </span>
+                        <span className="meta-value">
+                          {new Date(booking.confirmedAt).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="booking-actions">

@@ -72,51 +72,30 @@ const PackageDetails = () => {
     return <div className="container package-details-error">Package not found.</div>;
   }
 
-  const handleBooking = async () => {
-    setBookingLoading(true);
-    setBookingError(null);
-    setBookingSuccess(false);
+  const handleBooking = () => {
+    // Ensure we have all required fields with defaults
+    const bookingPackage = {
+      id: packageId,
+      title: tourPackage.title,
+      description: tourPackage.description,
+      destination: tourPackage.destination,
+      duration: tourPackage.duration,
+      price: tourPackage.price,
+      images: tourPackage.images || [],
+      included: tourPackage.included || [],
+      itinerary: tourPackage.itinerary || [],
+      available: tourPackage.available,
+      packageId: packageId // Keep both id and packageId for backward compatibility
+    };
 
-    try {
-      // Ensure we have the correct user ID
-      const userId = currentUser.uid || currentUser.id || 'anonymous';
-      
-      const bookingData = {
-        // User information
-        userId: userId,
-        userName: currentUser.displayName || currentUser.name || 'Guest User',
-        userEmail: currentUser.email || 'guest@example.com',
-        
-        // Package information
-        packageId: packageId || 'unknown',
-        vendorId: tourPackage.vendorId || 'system', // Ensure vendorId is never undefined
-        packageTitle: tourPackage.title || 'Tour Package',
-        price: tourPackage.price || 0,
-        totalPrice: tourPackage.price || 0, // Can be updated if quantity changes
-        destination: tourPackage.destination || 'Unknown',
-        duration: tourPackage.duration || '1 Day',
-        
-        // Booking details
-        bookingDate: new Date().toISOString(),
-        startDate: new Date().toISOString(), // Default to today
-        endDate: new Date(Date.now() + (parseInt(tourPackage.duration) || 1) * 24 * 60 * 60 * 1000).toISOString(),
-        guests: 1,
-        status: 'pending',
-        paymentStatus: 'pending'
-      };
-
-      console.log('[PackageDetails] Attempting booking with Firebase. User:', currentUser.uid);
-      console.log('[PackageDetails] Booking data:', bookingData);
-
-      // Create booking in Firebase Realtime Database
-      await createBooking(bookingData);
-      setBookingSuccess(true);
-    } catch (err) {
-      console.error("Booking error:", err);
-      setBookingError('An error occurred during booking. Please try again.');
-    } finally {
-      setBookingLoading(false);
-    }
+    console.log('Navigating to booking with package:', bookingPackage);
+    
+    // Navigate to the booking page with package details
+    navigate(`/book/${packageId}`, { 
+      state: { 
+        packageData: bookingPackage
+      } 
+    });
   };
 
   const { title, description, destination, duration, price, images = [], included = [], itinerary = [], available } = tourPackage;

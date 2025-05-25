@@ -1,13 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, storage, uploadFile, deleteFile, db } from '../config/firebase';
-import { getDatabase, ref, remove } from 'firebase/database';
+import { getDatabase, ref, remove, get, update } from 'firebase/database';
 import { signOut, updateProfile } from 'firebase/auth';
+
+// Helper function to format dates
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { 
   FiUser, FiMail, FiPhone, FiCalendar, FiMapPin, 
-  FiClock, FiEdit2, FiLogOut, FiX, FiSave, FiUserCheck, FiPlus, FiCamera, FiImage 
+  FiClock, FiEdit2, FiLogOut, FiX, FiSave, FiUserCheck, 
+  FiPlus, FiCamera, FiImage, FiMessageCircle 
 } from 'react-icons/fi';
 import PlaceholderImage from '../components/PlaceholderImage';
 import { FaPlaneDeparture, FaHotel, FaUtensils, FaHiking } from 'react-icons/fa';
@@ -442,16 +450,25 @@ const Dashboard = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setUpdateError('No user is currently signed in.');
+      return;
+    }
 
     try {
       setUploading(true);
       setUpdateError('');
       setUpdateSuccess('');
 
-      // Update user profile in Firebase Authentication
-      if (formData.displayName !== currentUser.displayName) {
-        await updateProfile(currentUser, {
+      // Get the current user from auth to ensure we have the latest data
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      // Update user profile in Firebase Authentication if display name changed
+      if (formData.displayName && formData.displayName !== user.displayName) {
+        await updateProfile(user, {
           displayName: formData.displayName
         });
       }
@@ -460,26 +477,26 @@ const Dashboard = () => {
       let photoURL = formData.photoURL;
       if (formData.photoFile) {
         // Delete old photo if exists
-        if (currentUser.photoURL) {
+        if (user.photoURL) {
           try {
-            // await deleteFile(currentUser.photoURL);
+            // await deleteFile(user.photoURL);
           } catch (error) {
             console.error('Error deleting old photo:', error);
           }
         }
-
         // Upload new photo
-        // const filePath = `profile_photos/${currentUser.uid}/${formData.photoFile.name}`;
+        // const filePath = `profile_photos/${user.uid}/${formData.photoFile.name}`;
         // photoURL = await uploadFile(formData.photoFile, filePath);
       }
 
       // Update user data in Realtime Database
-      const userData = await db.get(`users/${currentUser.uid}`) || {};
+      const userRef = ref(getDatabase(), `users/${user.uid}`);
+      const userData = (await get(userRef)).val() || {};
       
-      await db.update(`users/${currentUser.uid}`, {
+      await update(userRef, {
         ...userData,
-        displayName: formData.displayName || currentUser.displayName || '',
-        photoURL: photoURL,
+        displayName: formData.displayName || user.displayName || '',
+        photoURL: photoURL || user.photoURL || '',
         updatedAt: new Date().toISOString()
       });
 
@@ -489,20 +506,23 @@ const Dashboard = () => {
         photoURL: photoURL,
         photoFile: null
       }));
+      
       setPhotoPreview(photoURL);
       setUpdateSuccess('Profile updated successfully!');
       setIsEditing(false);
 
       // Update auth state with new data
-      await auth.currentUser.reload();
+      await user.reload();
       
       // Update local state with the latest user data
       const updatedUser = auth.currentUser;
-      setFormData(prev => ({
-        ...prev,
-        displayName: updatedUser.displayName || '',
-        photoURL: photoURL || updatedUser.photoURL || ''
-      }));
+      if (updatedUser) {
+        setFormData(prev => ({
+          ...prev,
+          displayName: updatedUser.displayName || '',
+          photoURL: photoURL || updatedUser.photoURL || ''
+        }));
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       setUpdateError(error.message || 'Failed to update profile');
@@ -516,20 +536,36 @@ const Dashboard = () => {
     let totalDays = 0;
     let totalNights = 0;
     
+    if (!bookings || !Array.isArray(bookings)) {
+      return { days: 0, nights: 0 };
+    }
+    
     bookings.forEach(booking => {
-      if (booking.duration) {
-        // If duration is a string like "2 days 1 night"
-        const daysMatch = booking.duration.match(/(\d+)\s*day/i);
-        const nightsMatch = booking.duration.match(/(\d+)\s*night/i);
-        
-        if (daysMatch) totalDays += parseInt(daysMatch[1], 10);
-        if (nightsMatch) totalNights += parseInt(nightsMatch[1], 10);
+      if (!booking) return;
+      
+      // Handle case where duration might be a string or a number
+      const duration = booking.duration?.toString() || '';
+      
+      if (duration) {
+        // If duration is a number, use it directly
+        if (!isNaN(parseInt(duration, 10))) {
+          const days = parseInt(duration, 10);
+          totalDays += days;
+          totalNights += Math.max(0, days - 1);
+        } else {
+          // If duration is a string like "2 days 1 night"
+          const daysMatch = duration.match(/(\d+)\s*day/i);
+          const nightsMatch = duration.match(/(\d+)\s*night/i);
+          
+          if (daysMatch) totalDays += parseInt(daysMatch[1], 10);
+          if (nightsMatch) totalNights += parseInt(nightsMatch[1], 10);
+        }
       }
     });
     
     // If no nights specified but days are, assume 1 night per day
     if (totalDays > 0 && totalNights === 0) {
-      totalNights = totalDays - 1; // For example, 3 days = 2 nights
+      totalNights = Math.max(0, totalDays - 1); // For example, 3 days = 2 nights
     }
     
     return { days: totalDays, nights: totalNights };

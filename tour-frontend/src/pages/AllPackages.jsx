@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { rtdb } from '../config/firebase';
-import { ref, get } from 'firebase/database';
+import { useData } from '../contexts/DataContext';
 import './PackageListPage.css'; // Styles for the list page
 
 const IconPin = () => <span className="icon-style">📍</span>;
@@ -10,38 +9,31 @@ const IconClock = () => <span className="icon-style">🕒</span>;
 
 function AllPackages() {
   const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setPackagesLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { getPackages } = useData();
 
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        setLoading(true);
+        setPackagesLoading(true);
         setError(null);
         
-        // Get packages from Firebase Realtime Database
-        const packagesRef = ref(rtdb, 'packages');
-        const packagesSnapshot = await get(packagesRef);
+        // Get all packages including pending ones
+        const response = await getPackages({ 
+          // No status filter to get all packages
+        }, 1, 100); // Fetch first 100 packages
         
-        if (packagesSnapshot.exists()) {
-          // Convert the object of packages to an array
-          const packagesData = Object.entries(packagesSnapshot.val()).map(([id, data]) => ({
-            id,
-            ...data
-          }));
-          setPackages(packagesData);
-        } else {
-          setPackages([]);
-        }
+        setPackages(response.packages || []);
       } catch (err) {
         console.error("Failed to fetch packages:", err);
         setError('Could not load packages. Please try again later.');
       } finally {
-        setLoading(false);
+        setPackagesLoading(false);
       }
     };
     fetchPackages();
-  }, []); // Add filter states to dependency array if they affect the fetch
+  }, [getPackages]);
 
   if (loading) {
     return <div className="package-list-loading"><div className="spinner"></div></div>;

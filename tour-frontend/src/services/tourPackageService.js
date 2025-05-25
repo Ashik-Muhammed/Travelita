@@ -117,17 +117,17 @@ export const getPackages = async (filters = {}, page = 1, pageSize = 10) => {
       return { packages: [], total: 0, currentPage: page, totalPages: 0 };
     }
     
-    // Convert snapshot to array and filter
+    // Convert snapshot to array
     let packages = [];
     snapshot.forEach((childSnapshot) => {
       const pkg = { id: childSnapshot.key, ...childSnapshot.val() };
-      // Apply filters
-      if (pkg.available === true && pkg.status === 'approved') {
-        if (!destination || pkg.destination === destination) {
-          packages.push(pkg);
-        }
-      }
+      packages.push(pkg);
     });
+    
+    // Apply status filter if provided
+    if (filters.status) {
+      packages = packages.filter(pkg => pkg.status === filters.status);
+    }
     
     // Get total count before pagination
     const total = packages.length;
@@ -206,7 +206,7 @@ export const getFeaturedPackages = async (type = 'top') => {
     const allPackages = [];
     snapshot.forEach((childSnapshot) => {
       const packageData = childSnapshot.val();
-      if (packageData.featured && packageData.status === 'approved' && packageData.available) {
+      if (packageData.featured && packageData.status === 'approved') {
         allPackages.push({
           id: childSnapshot.key,
           ...packageData
@@ -250,7 +250,6 @@ export const getPackagesByDestination = async (destination) => {
     snapshot.forEach((childSnapshot) => {
       const packageData = childSnapshot.val();
       if (packageData.destination === destination && 
-          packageData.available === true && 
           packageData.status === 'approved') {
         packages.push({
           id: childSnapshot.key,

@@ -1,8 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { logoutUser } from '../services/authService';
-import './Navbar.css'; // Import Navbar.css
+import './Navbar.css';
+
+// Memoized logo component to prevent unnecessary re-renders
+const Logo = React.memo(({ onClick }) => (
+  <Link to="/" className="navbar-logo" onClick={onClick}>
+    <div className="logo-container">
+      <span className="logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </span>
+      <span className="logo-text">Travelita</span>
+    </div>
+  </Link>
+));
+
+// Memoized navigation link component
+const NavLink = React.memo(({ to, children, className = '', onClick }) => (
+  <Link 
+    to={to} 
+    className={`navbar-link ${className}`}
+    onClick={onClick}
+  >
+    {children}
+  </Link>
+));
+
+// Mobile menu button component
+const MobileMenuButton = React.memo(({ isOpen, onClick }) => (
+  <button 
+    className={`mobile-menu-btn ${isOpen ? 'open' : ''}`} 
+    onClick={onClick}
+    aria-label={isOpen ? 'Close menu' : 'Open menu'}
+  >
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+));
 
 function Navbar() {
   // Get auth context for user information
@@ -222,8 +261,8 @@ function Navbar() {
           <div className={`navbar-links-container ${isMenuOpen ? 'open' : ''}`}>
             <ul className="navbar-links">
               <li><Link to="/" className="navbar-link nav-link" onClick={handleMobileLinkClick}>Home</Link></li>
+              <li><Link to="/packages" className="navbar-link nav-link" onClick={handleMobileLinkClick}>All Packages</Link></li>
               <li><Link to="/packages/top" className="navbar-link nav-link" onClick={handleMobileLinkClick}>Top Packages</Link></li>
-              <li><Link to="/packages/budget" className="navbar-link nav-link" onClick={handleMobileLinkClick}>Budget Friendly</Link></li>
               <li><Link to="/about" className="navbar-link nav-link" onClick={handleMobileLinkClick}>About Us</Link></li>
               <li><Link to="/contact" className="navbar-link nav-link" onClick={handleMobileLinkClick}>Contact</Link></li>
             </ul>
@@ -343,3 +382,4 @@ function Navbar() {
 }
 
 export default Navbar;
+

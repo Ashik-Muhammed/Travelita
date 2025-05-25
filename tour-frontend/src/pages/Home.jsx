@@ -18,7 +18,7 @@ function Home() {
   const [popularPackages, setPopularPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { getFeaturedPackages } = useData();
+  const { getPackages, getFeaturedPackages } = useData();
   
   // Refs for scroll animations
   const featuredSectionRef = useRef(null);
@@ -77,16 +77,17 @@ function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Get featured packages (limit to 6)
-        const packages = await getFeaturedPackages('top-rated', 6);
-        setFeaturedPackages(packages);
+        // Get all approved packages
+        const response = await getPackages({}, 1, 10); // Get first 10 packages
+        const allPackages = response.packages || [];
         
-        // Get popular packages (different from featured)
-        const popular = await getFeaturedPackages('popular', 3);
-        setPopularPackages(popular);
+        // Set featured packages (first 6)
+        setFeaturedPackages(allPackages.slice(0, 6));
+        
+        // Set popular packages (next 3)
+        setPopularPackages(allPackages.slice(6, 9));
         
         // Extract unique destinations from all packages
-        const allPackages = [...packages, ...popular];
         const uniqueDestinations = [...new Set(allPackages.map(pkg => pkg.destination))];
         setDestinations(uniqueDestinations.slice(0, 4));
         
@@ -98,7 +99,7 @@ function Home() {
       }
     };
     fetchData();
-  }, [getFeaturedPackages]);
+  }, [getPackages]);
 
   if (loading) {
     // Uses spinner from App.jsx / index.css
