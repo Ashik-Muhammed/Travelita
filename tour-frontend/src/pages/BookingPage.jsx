@@ -1,28 +1,124 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation ,Link} from 'react-router-dom';
 import { rtdb } from '../config/firebase';
 import { ref, get, push, set } from 'firebase/database';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './BookingPage.css';
+
+// Icons
 import {
   FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt,
-  FaCalendarAlt, FaLeaf, FaUtensils,
+  FaCalendarAlt, FaLeaf, FaUtensils, FaPrint,
   FaCar, FaCheck, FaClipboardList, FaWheelchair,
   FaShieldAlt, FaCamera, FaUserTie, FaBaby,
   FaCreditCard, FaMinus, FaPlus, FaArrowLeft,
   FaUserShield, FaPlane, FaBus, FaTrain, FaShip,
-  FaSubway, FaArrowRight, FaCheckCircle, FaClock
+  FaSubway, FaArrowRight, FaCheckCircle, FaClock,
+  FaExclamationCircle, FaInfoCircle,
+  FaHome, FaDownload, FaShare, FaQuestionCircle, FaCog
 } from 'react-icons/fa';
+
+// Form validation
+const validateForm = (data, currentStep) => {
+  const errors = {};
+  
+  // Step 1: Personal Information
+  if (currentStep === 1) {
+    // Full Name validation
+    if (!data.fullName?.trim()) {
+      errors.fullName = 'Full name is required';
+    } else if (data.fullName.trim().length < 2) {
+      errors.fullName = 'Name must be at least 2 characters long';
+    } else if (data.fullName.trim().length > 100) {
+      errors.fullName = 'Name cannot exceed 100 characters';
+    }
+    
+    // Email validation
+    if (!data.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    // Phone validation
+    if (!data.phone?.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[0-9]{10,15}$/.test(data.phone)) {
+      errors.phone = 'Please enter a valid 10-15 digit phone number';
+    }
+  }
+  
+  // Step 2: Travel Details
+  if (currentStep === 2) {
+    // Travel date validation
+    if (!data.date) {
+      errors.date = 'Travel date is required';
+    } else {
+      const selectedDate = new Date(data.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        errors.date = 'Travel date must be today or in the future';
+      } else if (selectedDate > new Date(today.setFullYear(today.getFullYear() + 1))) {
+        errors.date = 'Travel date cannot be more than 1 year in advance';
+      }
+    }
+    
+    // Time validation
+    if (!data.time) {
+      errors.time = 'Travel time is required';
+    }
+    
+    // Travelers validation
+    if (!data.adults && data.adults !== 0) {
+      errors.adults = 'Number of adults is required';
+    } else if (data.adults < 1) {
+      errors.adults = 'At least one adult is required';
+    } else if (data.adults > 10) {
+      errors.adults = 'Maximum 10 adults allowed per booking';
+    }
+    
+    if (data.children < 0) {
+      errors.children = 'Number of children cannot be negative';
+    } else if (data.children > 10) {
+      errors.children = 'Maximum 10 children allowed per booking';
+    }
+    
+    if (data.infants < 0) {
+      errors.infants = 'Number of infants cannot be negative';
+    } else if (data.infants > 5) {
+      errors.infants = 'Maximum 5 infants allowed per booking';
+    }
+    
+    // Total travelers validation
+    const totalTravelers = (data.adults || 0) + (data.children || 0) + (data.infants || 0);
+    if (totalTravelers < 1) {
+      errors.travelers = 'At least one traveler is required';
+    } else if (totalTravelers > 15) {
+      errors.travelers = 'Maximum 15 travelers allowed per booking';
+    }
+  }
+  
+  // Step 3: Additional Requirements
+  if (currentStep === 3) {
+    // Special requests validation (if needed)
+    if (data.specialRequests && data.specialRequests.length > 500) {
+      errors.specialRequests = 'Special requests cannot exceed 500 characters';
+    }
+  }
+  
+  return errors;
+};
 
 // Helper function to format dates
 const formatDate = (dateString) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
-
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import './BookingPage.css';
 
 function BookingPage() {
   const { packageId } = useParams();
@@ -39,17 +135,30 @@ function BookingPage() {
   const [isBookingComplete, setIsBookingComplete] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [showTooltip, setShowTooltip] = useState(false);
+  const [formTouched, setFormTouched] = useState({});
   
-  // Set default date to tomorrow
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
+  // Calculate dates for date picker
+  const today = new Date();
+  
+  // Min date (tomorrow)
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() + 1);
+  const minDateFormatted = minDate.toISOString().split('T')[0];
+  
+  // Max date (1 year from now)
+  const maxDate = new Date(today);
+  maxDate.setFullYear(today.getFullYear() + 1);
+  const maxDateFormatted = maxDate.toISOString().split('T')[0];
+  
+  // Alias for date picker
+  const datePickerMinDate = minDateFormatted;
+  const datePickerMaxDate = maxDateFormatted;
 
   const [bookingData, setBookingData] = useState({
     fullName: currentUser?.displayName || '',
     email: currentUser?.email || '',
     phone: '',
-    date: tomorrowFormatted,
+    date: minDateFormatted,
     time: '09:00',
     duration: 1,
     travelers: 1,
@@ -57,42 +166,71 @@ function BookingPage() {
     children: 0,
     infants: 0,
     specialNeeds: false,
-    mealPreference: 'vegetarian',
-    transportation: 'bus',
-    accommodation: 'standard',
+    mealPreference: '',
+    transportation: '',
+    accommodation: '',
     specialRequests: '',
     travelInsurance: false,
     photography: false,
-    privateGuide: false
+    privateGuide: false,
+    bookingRef: '' // Initialize with empty string, will be set on submission
   });
 
-  const handleNextStep = () => {
-    // Basic validation before proceeding to next step
+  const validateCurrentStep = () => {
+    // Mark all fields in current step as touched
+    const newTouched = { ...formTouched };
+    let hasError = false;
+    
+    // Mark all fields in current step as touched
     if (currentStep === 1) {
-      // Validate personal info
-      if (!bookingData.fullName || !bookingData.email || !bookingData.phone) {
-        toast.error('Please fill in all required fields');
-        return;
-      }
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(bookingData.email)) {
-        toast.error('Please enter a valid email address');
-        return;
-      }
-      // Move to step 2 (travel details)
-      setCurrentStep(2);
+      ['fullName', 'email', 'phone'].forEach(field => {
+        newTouched[field] = true;
+      });
     } else if (currentStep === 2) {
-      // Validate travel details
-      if (!bookingData.date || !bookingData.time) {
-        toast.error('Please select date and time for your tour');
-        return;
-      }
-      setCurrentStep(3);
-    } else if (currentStep === 3) {
-      // No validation needed for preferences step, just proceed to confirmation
-      setCurrentStep(4);
+      ['date', 'time', 'adults', 'children', 'infants'].forEach(field => {
+        newTouched[field] = true;
+      });
     }
+    
+    setFormTouched(newTouched);
+    
+    // Validate current step
+    const errors = validateForm(bookingData, currentStep);
+    setValidationErrors(errors);
+    
+    // Check if there are any errors for the current step
+    const stepFields = {
+      1: ['fullName', 'email', 'phone'],
+      2: ['date', 'time', 'adults', 'children', 'infants', 'travelers'],
+      3: [] // No required fields in step 3
+    };
+    
+    const hasStepErrors = stepFields[currentStep].some(field => errors[field]);
+    
+    if (hasStepErrors) {
+      // Scroll to first error
+      const firstError = Object.keys(errors).find(key => stepFields[currentStep].includes(key));
+      if (firstError) {
+        const element = document.querySelector(`[name="${firstError}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus({ preventScroll: true });
+        }
+      }
+      return false;
+    }
+    
+    return true;
+  };
+  
+  const handleNextStep = () => {
+    if (!validateCurrentStep()) {
+      return;
+    }
+    
+    // Proceed to next step if validation passes
+    setCurrentStep(prevStep => Math.min(prevStep + 1, 4));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePreviousStep = () => {
@@ -129,6 +267,13 @@ function BookingPage() {
       setError({ message: 'Invalid package data', isNotFound: false });
       setLoading(false);
       return;
+    }
+    
+    console.log('Processing package data:', pkg);
+    console.log('Package images:', pkg.images);
+    if (pkg.images && pkg.images.length > 0) {
+      console.log('First image URL:', pkg.images[0]);
+      console.log('Type of first image:', typeof pkg.images[0]);
     }
 
     try {
@@ -219,94 +364,52 @@ function BookingPage() {
   }, [packageId, location.state, currentUser]);
 
   const handleInputChange = (e) => {
-    const { name, value, type } = e.target;
-    setBookingData({
-      ...bookingData,
-      [name]: type === 'number' ? parseInt(value) || 1 : value
-    });
+    const { name, value, type, checked } = e.target;
+    
+    // Handle different input types
+    const inputValue = type === 'checkbox' ? checked : value;
+    
+    setBookingData(prev => ({
+      ...prev,
+      [name]: inputValue
+    }));
+    
+    // Mark field as touched
+    setFormTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    // Validate field on change if it's been touched before
+    if (formTouched[name]) {
+      const errors = validateForm({ ...bookingData, [name]: inputValue }, currentStep);
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: errors[name] || null
+      }));
+    }
+  };
+  
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    
+    // Mark field as touched
+    if (!formTouched[name]) {
+      setFormTouched(prev => ({
+        ...prev,
+        [name]: true
+      }));
+    }
+    
+    // Validate field on blur
+    const errors = validateForm(bookingData, currentStep);
+    setValidationErrors(prev => ({
+      ...prev,
+      [name]: errors[name] || null
+    }));
   };
 
-  // Calculate minimum date (tomorrow)
-  const minDate = tomorrowFormatted;
-  // Calculate maximum date (1 year from now)
-  const maxDate = new Date();
-  maxDate.setFullYear(maxDate.getFullYear() + 1);
-  const maxDateFormatted = maxDate.toISOString().split('T')[0];
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="loading-state">
-        <div className="loading-spinner"></div>
-        <h3>Loading your booking details</h3>
-        <p className="text-gray-500">Please wait while we prepare your experience</p>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="error-state">
-        <div className="error-message">
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-red-100 p-3 rounded-full">
-              <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <h3>Something went wrong</h3>
-          <p>{error.message || 'We couldn\'t load the booking details. Please try again later.'}</p>
-          <div className="mt-6 flex justify-center gap-4">
-            <button
-              onClick={() => window.location.reload()}
-              className="btn btn-primary"
-            >
-              Try Again
-            </button>
-            <button
-              onClick={() => navigate('/packages')}
-              className="btn btn-outline"
-            >
-              Browse Packages
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show not found state
-  if (!tourPackage) {
-    return (
-      <div className="not-found-state">
-        <div className="text-center max-w-md mx-auto">
-          <div className="bg-blue-50 p-4 rounded-full inline-flex items-center justify-center mb-6">
-            <svg className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Package Not Found</h2>
-          <p className="text-gray-600 mb-8">The package you're looking for doesn't exist or may have been removed. Please check the URL or browse our available packages.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => navigate(-1)}
-              className="btn btn-outline"
-            >
-              <FaArrowLeft className="mr-2" /> Go Back
-            </button>
-            <button
-              onClick={() => navigate('/packages')}
-              className="btn btn-primary"
-            >
-              Browse Packages
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Using minDateFormatted defined at the top of the component
 
   const updateTravelerCount = (type, change) => {
     setBookingData(prev => {
@@ -331,110 +434,141 @@ function BookingPage() {
     (bookingData.transportation === 'premium' ? 2000 : 0)
     : 0;
 
+  // Generate a booking reference
+  const generateBookingRef = () => {
+    return 'BK' + Math.random().toString(36).substr(2, 8).toUpperCase();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (currentStep < 3) {
-      handleNextStep();
+    // Mark all fields as touched to show all errors
+    const newTouched = {};
+    Object.keys(bookingData).forEach(field => {
+      newTouched[field] = true;
+    });
+    setFormTouched(newTouched);
+    
+    // Generate booking reference if not already set
+    const updatedBookingData = { ...bookingData };
+    if (!updatedBookingData.bookingRef) {
+      updatedBookingData.bookingRef = generateBookingRef();
+      setBookingData(updatedBookingData);
+    }
+    
+    // Validate form before submission
+    const errors = validateForm(updatedBookingData, currentStep);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      
+      // Scroll to first error
+      const firstError = Object.keys(errors)[0];
+      const element = document.querySelector(`[name="${firstError}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus({ preventScroll: true });
+      }
+      
       return;
     }
     
+    // Clear any previous errors
+    setValidationErrors({});
+    
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    // If this is the final step, submit the booking
     try {
       setIsSubmitting(true);
-      setError(null);
-      setSuccessMessage('');
-
-      // Validate all required fields
-      const requiredFields = ['fullName', 'email', 'phone', 'date', 'time'];
-      const missingFields = requiredFields.filter(field => !bookingData[field]);
       
-      if (missingFields.length > 0) {
-        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
-      }
+      // Generate booking reference
+      const bookingRef = generateBookingRef();
+      
+      // Create booking object
+      // Handle image fallback
+      const getImageUrl = (imageUrl) => {
+        if (!imageUrl) return '/placeholder-tour.jpg'; // Local fallback image
+        if (imageUrl.startsWith('http')) return imageUrl;
+        return imageUrl;
+      };
 
-      if (!currentUser) {
-        throw new Error('You must be logged in to make a booking');
-      }
-
-      if (!tourPackage) {
-        throw new Error('Package information is missing');
-      }
-
-      // Calculate end date based on duration
-      const endDate = new Date(
-        new Date(bookingData.date).getTime() + 
-        ((bookingData.duration || 1) * 24 * 60 * 60 * 1000)
-      ).toISOString();
-
-      // Create booking object with all necessary fields
       const booking = {
-        // User information
-        userId: currentUser.uid,
-        userName: bookingData.fullName,
-        userEmail: bookingData.email,
-        userPhone: bookingData.phone,
-        
-        // Package information
+        ...bookingData,
+        bookingRef, // Add the generated booking reference
         packageId: tourPackage.id,
-        packageTitle: tourPackage.title || 'Tour Package',
-        packagePrice: tourPackage.price || 0,
-        vendorId: tourPackage.vendorId || 'system',
-        destination: tourPackage.destination || 'Unknown',
-        
-        // Booking details
-        bookingDate: new Date().toISOString(),
-        startDate: bookingData.date,
-        endDate: endDate,
-        date: bookingData.date,
-        time: bookingData.time,
-        duration: bookingData.duration || 1,
-        travelers: bookingData.travelers,
-        adults: bookingData.adults,
-        children: bookingData.children,
-        infants: bookingData.infants,
-        
-        // Preferences
-        mealPreference: bookingData.mealPreference,
-        transportation: bookingData.transportation,
-        accommodation: bookingData.accommodation,
-        specialRequests: bookingData.specialRequests,
-        specialNeeds: bookingData.specialNeeds,
-        travelInsurance: bookingData.travelInsurance,
-        photography: bookingData.photography,
-        privateGuide: bookingData.privateGuide,
-        
-        // Pricing
-        totalPrice: totalPrice,
-        
-        // Status
-        status: 'pending', // Changed from 'confirmed' to 'pending' to require vendor confirmation
-        paymentStatus: 'pending',
-        
-        // Timestamps
+        packageName: tourPackage.title,
+        packageImage: getImageUrl(tourPackage.images?.[0]),
+        status: 'pending',
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email,
+        userEmail: currentUser.email,
+        totalPrice: totalPrice,
+        paymentStatus: 'pending',
+        bookingDate: new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
       };
       
       // Save to Firebase
       const bookingsRef = ref(rtdb, 'bookings');
       const newBookingRef = push(bookingsRef);
-      await set(newBookingRef, booking);
+      await set(newBookingRef, {
+        ...booking,
+        id: newBookingRef.key // Save the Firebase-generated ID
+      });
       
-      // Show success message and move to confirmation step
-      setSuccessMessage('Your booking has been confirmed! We\'ve sent a confirmation to your email.');
+      // Show success message
+      toast.success('Your booking has been confirmed!', {
+        position: 'top-center',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
+      
+      setSuccessMessage('Your booking has been confirmed!');
       setIsBookingComplete(true);
-      setCurrentStep(5); // Move to confirmation step
+      
+      // // Redirect to bookings page after 3 seconds
+      // setTimeout(() => {
+      //   navigate('/bookings');
+      // }, 3000);
       
     } catch (error) {
-      console.error('Error submitting booking:', error);
-      toast.error(error.message || 'An error occurred while processing your booking. Please try again.');
+      console.error('Error creating booking:', error);
+      toast.error('Failed to create booking. Please try again.', {
+        position: 'top-center',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
+      
+      setError({
+        message: 'Failed to create booking. Please try again.',
+        isNotFound: false
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const validateStep = (step) => {
-    const errors = {};
+    const errors = validateForm(bookingData, step);
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
     
     if (step === 1) {
       if (!bookingData.fullName) errors.fullName = 'Full name is required';
@@ -525,35 +659,33 @@ function BookingPage() {
     ];
     
     return (
-      <div className="max-w-4xl mx-auto mb-12">
-        <div className="flex items-center justify-between relative">
+      <div className="step-indicator-container">
+        <div className="step-indicator">
           {/* Progress bar */}
-          <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 -translate-y-1/2 -z-10">
+          <div className="progress-bar-container">
             <div 
-              className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500 ease-in-out"
+              className="progress-bar"
               style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
             ></div>
           </div>
           
           {/* Steps */}
-          {steps.map((step) => (
-            <div key={step.number} className="flex flex-col items-center relative z-10">
-              <div 
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-medium text-sm mb-2 transition-all duration-300 ${
-                  currentStep >= step.number 
-                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 scale-110 shadow-lg' 
-                    : 'bg-gray-300'
-                }`}
-              >
-                {currentStep > step.number ? <FaCheck className="w-5 h-5" /> : step.number}
+          {steps.map((step) => {
+            const isActive = currentStep === step.number;
+            const isCompleted = currentStep > step.number;
+            const stepClass = isActive ? 'active' : isCompleted ? 'completed' : '';
+            
+            return (
+              <div key={step.number} className={`step ${stepClass}`}>
+                <div className="step-number">
+                  {isCompleted ? null : step.number}
+                </div>
+                <span className="step-label">
+                  {step.label}
+                </span>
               </div>
-              <span className={`text-sm font-medium transition-colors duration-200 ${
-                currentStep >= step.number ? 'text-indigo-700 font-semibold' : 'text-gray-500'
-              }`}>
-                {step.label}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -624,7 +756,7 @@ function BookingPage() {
                     value={bookingData.phone}
                     onChange={handleInputChange}
                     className="block w-full py-3 px-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 transition-colors duration-200"
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+91 "
                     required
                   />
                 </div>
@@ -645,7 +777,7 @@ function BookingPage() {
             className="space-y-6"
           >
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Travel Details</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">{tourPackage?.title || 'Loading package...'}</h3>
               <p className="text-gray-600 max-w-lg mx-auto">When would you like to go and who's coming along?</p>
             </div>
             
@@ -743,12 +875,11 @@ function BookingPage() {
                   </div>
                 </div>
               </div>
-              
-              <div className="space-y-4">
+                            <div className="space-y-4">
                 <h3 className="text-lg font-medium text-gray-900">Special Requirements</h3>
                 <div className="space-y-3">
                   <div className="flex items-start">
-                    <div className="flex items-center h-5">
+                    <div className="flex items-start mt-0.5">
                       <div className="relative flex items-center">
                         <input
                           id="specialNeeds"
@@ -766,7 +897,7 @@ function BookingPage() {
                             ${bookingData.specialNeeds ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}
                             transition-colors duration-200 ease-in-out
                             focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-                            relative
+                            relative mt-1
                           `}
                         />
                         {bookingData.specialNeeds && (
@@ -786,9 +917,9 @@ function BookingPage() {
                         )}
                       </div>
                     </div>
-                    <div className="ml-3 text-sm">
-                      <label htmlFor="specialNeeds" className="font-medium text-gray-700">Accessibility Requirements</label>
-                      <p className="text-gray-500">Check if you or anyone in your group has mobility or accessibility needs</p>
+                    <div className="ml-3">
+                      <label htmlFor="specialNeeds" className="block text-sm font-medium text-gray-700">Accessibility Requirements</label>
+                      <p className="mt-1 text-sm text-gray-500">Check if you or anyone in your group has mobility or accessibility needs</p>
                     </div>
                   </div>
                   
@@ -803,7 +934,6 @@ function BookingPage() {
                         onChange={handleInputChange}
                         rows="3"
                         className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 transition-colors duration-200"
-                        placeholder="Dietary restrictions, special accommodations, or any other requests..."
                       />
                     </div>
                   </div>
@@ -837,74 +967,394 @@ function BookingPage() {
             </div>
             
             <div className="space-y-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              {/* Meal Preferences */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Meal Preferences</h3>
-                <div className="space-y-3">
-                  {[
-                    { id: 'vegetarian', label: 'Vegetarian' },
-                    { id: 'vegan', label: 'Vegan' },
-                    { id: 'glutenFree', label: 'Gluten-Free' },
-                    { id: 'noRestrictions', label: 'No Dietary Restrictions' }
-                  ].map((meal) => (
-                    <div key={meal.id} className="flex items-start">
-                      <div className="flex items-center h-5 relative">
-                        <div className="relative flex items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Column 1: Travel Preferences */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900">Travel Preferences</h3>
+                    <button
+                      type="button"
+                      onClick={() => setBookingData(prev => ({
+                        ...prev,
+                        travelPreferences: [],
+                        transportationType: '',
+                        travelStyle: '',
+                        preferredSeating: '',
+                        specialRequests: ''
+                      }))}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Preferred Mode of Transport</h4>
+                    {[
+                      { id: 'bus', label: 'Luxury Coach', icon: <FaBus className="mr-2" /> },
+                      { id: 'train', label: 'Train (1st Class)', icon: <FaTrain className="mr-2" /> },
+                      { id: 'flight', label: 'Flight (Economy)', icon: <FaPlane className="mr-2" /> },
+                      { id: 'privateCar', label: 'Private Car', icon: <FaCar className="mr-2" /> },
+                      { id: 'cruise', label: 'Cruise', icon: <FaShip className="mr-2" /> }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center">
+                        <div className="custom-input-container">
                           <input
-                            id={`meal-${meal.id}`}
-                            name="mealPreferences"
+                            id={`transport-${item.id}`}
+                            name="transportationType"
+                            type="radio"
+                            checked={bookingData.transportationType === item.id}
+                            onChange={() => setBookingData(prev => ({
+                              ...prev,
+                              transportationType: item.id
+                            }))}
+                            className="custom-input"
+                          />
+                          <span className="custom-radio-checkmark"></span>
+                        </div>
+                        <label htmlFor={`transport-${item.id}`} className="ml-3 flex items-center text-sm font-medium text-gray-700">
+                          {item.icon}
+                          {item.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Seating Preference</h4>
+                    {[
+                      { id: 'window', label: 'Window Seat' },
+                      { id: 'aisle', label: 'Aisle Seat' },
+                      { id: 'front', label: 'Front of Vehicle' },
+                      { id: 'back', label: 'Back of Vehicle' },
+                      { id: 'noPreference', label: 'No Preference' }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center">
+                        <div className="custom-input-container">
+                          <input
+                            id={`seating-${item.id}`}
+                            name="preferredSeating"
+                            type="radio"
+                            checked={bookingData.preferredSeating === item.id}
+                            onChange={() => setBookingData(prev => ({
+                              ...prev,
+                              preferredSeating: item.id
+                            }))}
+                            className="custom-input"
+                          />
+                          <span className="custom-radio-checkmark"></span>
+                        </div>
+                        <label htmlFor={`seating-${item.id}`} className="ml-3 block text-sm font-medium text-gray-700">
+                          {item.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Column 2: Accommodation Preferences */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900">Accommodation</h3>
+                    <button
+                      type="button"
+                      onClick={() => setBookingData(prev => ({
+                        ...prev,
+                        roomType: '',
+                        roomView: '',
+                        bedType: '',
+                        smokingPreference: '',
+                        floorPreference: ''
+                      }))}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Room Type</h4>
+                    {[
+                      { id: 'standard', label: 'Standard' },
+                      { id: 'deluxe', label: 'Deluxe' },
+                      { id: 'suite', label: 'Suite' },
+                      { id: 'family', label: 'Family Room' },
+                      { id: 'executive', label: 'Executive' }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center">
+                        <div className="custom-input-container">
+                          <input
+                            id={`room-${item.id}`}
+                            name="roomType"
+                            type="radio"
+                            checked={bookingData.roomType === item.id}
+                            onChange={() => setBookingData(prev => ({
+                              ...prev,
+                              roomType: item.id
+                            }))}
+                            className="custom-input"
+                          />
+                          <span className="custom-radio-checkmark"></span>
+                        </div>
+                        <label htmlFor={`room-${item.id}`} className="ml-3 block text-sm font-medium text-gray-700">
+                          {item.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Room Features</h4>
+                    {[
+                      { id: 'ac', label: 'Air Conditioning' },
+                      { id: 'nonAc', label: 'Non-AC' },
+                      { id: 'balcony', label: 'Balcony' },
+                      { id: 'oceanView', label: 'Ocean View' },
+                      { id: 'cityView', label: 'City View' }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center">
+                        <div className="custom-input-container">
+                          <input
+                            id={`feature-${item.id}`}
+                            name="roomFeatures"
                             type="checkbox"
-                            checked={bookingData.mealPreferences?.includes(meal.id) || false}
+                            checked={bookingData.roomFeatures?.includes(item.id) || false}
                             onChange={(e) => {
-                              const currentPreferences = bookingData.mealPreferences || [];
-                              const isChecked = currentPreferences.includes(meal.id);
+                              const currentFeatures = bookingData.roomFeatures || [];
+                              const isChecked = currentFeatures.includes(item.id);
                               
                               setBookingData(prev => ({
                                 ...prev,
-                                mealPreferences: isChecked
-                                  ? currentPreferences.filter(id => id !== meal.id)
-                                  : [...currentPreferences, meal.id]
+                                roomFeatures: isChecked
+                                  ? currentFeatures.filter(id => id !== item.id)
+                                  : [...currentFeatures, item.id]
                               }));
                             }}
-                            className="h-5 w-5 rounded border-gray-300 appearance-none bg-white border-2 checked:bg-indigo-600 checked:border-indigo-600 focus:ring-0 focus:ring-offset-0"
+                            className="custom-input"
                           />
-                          {bookingData.mealPreferences?.includes(meal.id) && (
-                            <svg
-                              className="absolute left-1 top-1/2 transform -translate-y-1/2 w-3 h-3 text-white pointer-events-none"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          )}
+                          <span className="custom-checkbox-checkmark"></span>
                         </div>
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor={`meal-${meal.id}`} className="font-medium text-gray-700">
-                          {meal.label}
+                        <label htmlFor={`feature-${item.id}`} className="ml-3 block text-sm font-medium text-gray-700">
+                          {item.label}
                         </label>
                       </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Bed Type</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'king', label: 'King Bed' },
+                        { id: 'queen', label: 'Queen Bed' },
+                        { id: 'twin', label: 'Twin Beds' },
+                        { id: 'double', label: 'Double Bed' }
+                      ].map((item) => (
+                        <div key={item.id} className="flex items-center">
+                          <div className="custom-input-container">
+                            <input
+                              id={`bed-${item.id}`}
+                              name="bedType"
+                              type="radio"
+                              checked={bookingData.bedType === item.id}
+                              onChange={() => setBookingData(prev => ({
+                                ...prev,
+                                bedType: item.id
+                              }))}
+                              className="custom-input"
+                            />
+                            <div className="custom-radio-checkmark"></div>
+                          </div>
+                          <label htmlFor={`bed-${item.id}`} className="ml-2 block text-sm font-medium text-gray-700">
+                            {item.label}
+                          </label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="mt-4">
-                    <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700 mb-1">Additional Requests</label>
+                {/* Column 3: Meal & Special Preferences */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900">Meal Preferences</h3>
+                    <button
+                      type="button"
+                      onClick={() => setBookingData(prev => ({
+                        ...prev,
+                        mealPreferences: [],
+                        dietaryRestrictions: [],
+                        foodAllergies: ''
+                      }))}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                      {[
+                        { id: 'vegetarian', label: 'Vegetarian' },
+                        { id: 'vegan', label: 'Vegan' },
+                        { id: 'glutenFree', label: 'Gluten-Free' },
+                        { id: 'kosher', label: 'Kosher' },
+                        { id: 'noRestrictions', label: 'No Dietary Restrictions' }
+                      ].map((meal) => (
+                        <div key={meal.id} className="flex items-center">
+                          <div className="custom-input-container">
+                            <input
+                              id={`meal-${meal.id}`}
+                              name="mealPreferences"
+                              type="checkbox"
+                              checked={bookingData.mealPreferences?.includes(meal.id) || false}
+                              onChange={(e) => {
+                                const currentPreferences = bookingData.mealPreferences || [];
+                                const isChecked = currentPreferences.includes(meal.id);
+                                
+                                setBookingData(prev => ({
+                                  ...prev,
+                                  mealPreferences: isChecked
+                                    ? currentPreferences.filter(id => id !== meal.id)
+                                    : [...currentPreferences.filter(id => id !== 'noRestrictions'), meal.id]
+                                }));
+                              }}
+                              className="custom-input"
+                            />
+                            <span className="custom-checkbox-checkmark"></span>
+                          </div>
+                          <label htmlFor={`meal-${meal.id}`} className="ml-3 block text-sm font-medium text-gray-700">
+                            {meal.label}
+                          </label>
+                        </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label htmlFor="foodAllergies" className="block text-sm font-medium text-gray-700 mb-1">Food Allergies</label>
+                    <input
+                      type="text"
+                      id="foodAllergies"
+                      name="foodAllergies"
+                      value={bookingData.foodAllergies || ''}
+                      onChange={handleInputChange}
+                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 transition-colors duration-200"
+                      placeholder="List any food allergies..."
+                    />
+                  </div>
+                </div>
+
+                {/* Travel Preferences */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900">Travel Preferences</h3>
+                    <button
+                      type="button"
+                      onClick={() => setBookingData(prev => ({
+                        ...prev,
+                        travelPreferences: [],
+                        accessibilityNeeds: [],
+                        specialRequests: ''
+                      }))}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Accessibility Needs</h4>
+                    {[
+                      { id: 'wheelchair', label: 'Wheelchair Accessible' },
+                      { id: 'elevator', label: 'Requires Elevator' },
+                      { id: 'walkingAid', label: 'Walking Aid Required' },
+                      { id: 'hearingAid', label: 'Hearing Loop Required' },
+                      { id: 'visualAid', label: 'Visual Assistance Required' },
+                      { id: 'none', label: 'No Special Requirements' }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center">
+                        <div className="custom-input-container">
+                          <input
+                            id={`access-${item.id}`}
+                            name="accessibilityNeeds"
+                            type="checkbox"
+                            checked={bookingData.accessibilityNeeds?.includes(item.id) || false}
+                            onChange={(e) => {
+                              const currentAccessibility = bookingData.accessibilityNeeds || [];
+                              const isChecked = currentAccessibility.includes(item.id);
+                              
+                              setBookingData(prev => ({
+                                ...prev,
+                                accessibilityNeeds: isChecked
+                                  ? currentAccessibility.filter(id => id !== item.id)
+                                  : [...currentAccessibility.filter(id => id !== 'none'), item.id]
+                              }));
+                            }}
+                            className="custom-input"
+                          />
+                          <span className="custom-checkbox-checkmark"></span>
+                        </div>
+                        <label htmlFor={`access-${item.id}`} className="ml-3 block text-sm font-medium text-gray-700">
+                          {item.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Travel Style</h4>
+                    {[
+                      { id: 'leisurely', label: 'Leisurely Pace' },
+                      { id: 'moderate', label: 'Moderate Pace' },
+                      { id: 'fast', label: 'Fast-Paced' },
+                      { id: 'adventure', label: 'Adventure Seeker' },
+                      { id: 'relaxed', label: 'Relaxed Experience' }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center">
+                        <div className="custom-input-container">
+                          <input
+                            id={`style-${item.id}`}
+                            name="travelStyle"
+                            type="radio"
+                            checked={bookingData.travelStyle === item.id}
+                            onChange={() => setBookingData(prev => ({
+                              ...prev,
+                              travelStyle: item.id
+                            }))}
+                            className="custom-input"
+                          />
+                          <span className="custom-radio-checkmark"></span>
+                        </div>
+                        <label htmlFor={`style-${item.id}`} className="ml-2 block text-sm font-medium text-gray-700">
+                          {item.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700">Special Requests</label>
+                      {bookingData.specialRequests && (
+                        <button
+                          type="button"
+                          onClick={() => setBookingData(prev => ({
+                            ...prev,
+                            specialRequests: ''
+                          }))}
+                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                     <textarea
                       id="specialRequests"
                       name="specialRequests"
                       value={bookingData.specialRequests || ''}
-                      onChange={(e) => setBookingData({...bookingData, specialRequests: e.target.value})}
+                      onChange={handleInputChange}
                       rows="3"
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 transition-colors duration-200"
-                      placeholder="Dietary restrictions, special accommodations, or any other requests..."
+                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 transition-colors duration-200"
+                      placeholder="Any special requests or additional information..."
                     />
                   </div>
                 </div>
@@ -970,23 +1420,92 @@ function BookingPage() {
                 
                 <div className="p-6 bg-gray-50">
                   <h4 className="font-medium text-gray-900 mb-3">Your Preferences</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Meal Preference</p>
-                      <p className="font-medium capitalize">
-                        {bookingData.mealPreference || 'Not specified'}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Meal Preferences */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-500">Meal Preferences</p>
+                      <div className="space-y-1">
+                        {bookingData.mealPreferences?.length > 0 ? (
+                          bookingData.mealPreferences.map(pref => (
+                            <p key={pref} className="text-gray-700 capitalize">
+                              {pref.replace(/([A-Z])/g, ' $1').trim()}
+                            </p>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 italic">No meal preferences selected</p>
+                        )}
+                        {bookingData.foodAllergies && (
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <p className="text-sm font-medium text-gray-500">Food Allergies</p>
+                            <p className="text-gray-700">{bookingData.foodAllergies}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Room Preferences */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-500">Room Preferences</p>
+                      <div className="space-y-1">
+                        {bookingData.roomType && (
+                          <p className="text-gray-700 capitalize">
+                            <span className="text-gray-500">Type:</span> {bookingData.roomType}
+                          </p>
+                        )}
+                        {bookingData.bedType && (
+                          <p className="text-gray-700 capitalize">
+                            <span className="text-gray-500">Bed:</span> {bookingData.bedType}
+                          </p>
+                        )}
+                        {bookingData.roomFeatures?.length > 0 && (
+                          <div>
+                            <p className="text-sm text-gray-500">Room Features:</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {bookingData.roomFeatures.map(feature => (
+                                <span key={feature} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                  {feature.replace(/([A-Z])/g, ' $1').trim()}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Accessibility Needs */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-500">Accessibility Needs</p>
+                      <div className="space-y-1">
+                        {bookingData.accessibilityNeeds?.length > 0 ? (
+                          bookingData.accessibilityNeeds.map(need => (
+                            <p key={need} className="text-gray-700">
+                              {need === 'none' ? 'No special requirements' : 
+                               need.replace(/([A-Z])/g, ' $1').trim()}
+                            </p>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 italic">No special accessibility needs</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Travel Style */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-500">Travel Style</p>
+                      <p className="text-gray-700 capitalize">
+                        {bookingData.travelStyle ? 
+                         bookingData.travelStyle.replace(/([A-Z])/g, ' $1').trim() : 
+                         'Not specified'}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Transportation</p>
-                      <p className="font-medium capitalize">
-                        {bookingData.transportation || 'Standard (included)'}
-                      </p>
-                    </div>
+
+                    {/* Special Requests */}
                     {bookingData.specialRequests && (
-                      <div className="md:col-span-2">
-                        <p className="text-sm text-gray-500">Special Requests</p>
-                        <p className="font-medium">{bookingData.specialRequests}</p>
+                      <div className="md:col-span-2 space-y-2">
+                        <p className="text-sm font-medium text-gray-500">Special Requests</p>
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <p className="text-gray-700 whitespace-pre-line">{bookingData.specialRequests}</p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1236,63 +1755,187 @@ function BookingPage() {
         return null;
     }
   };
-
   if (isBookingComplete) {
+    const colors = ['bg-yellow-400', 'bg-pink-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400'];
+    const sizes = ['w-1.5 h-1.5', 'w-2 h-2', 'w-2.5 h-2.5'];
+  
+    const confettiArray = Array.from({ length: 100 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 2}s`,
+      rotate: `${Math.random() * 360}deg`,
+      opacity: Math.random() * 0.5 + 0.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: sizes[Math.floor(Math.random() * sizes.length)],
+    }));
+
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
-            <FaCheck className="h-8 w-8 text-green-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4 print:bg-white">
+        
+        {/* 🎊 Confetti Animation */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          {confettiArray.map(({ id, left, delay, rotate, opacity, color, size }) => (
+            <div
+              key={id}
+              className={`absolute ${size} ${color} rounded-full animate-confetti`}
+              style={{
+                left,
+                top: '-10px',
+                animationDelay: delay,
+                transform: `rotate(${rotate})`,
+                opacity,
+              }}
+            />
+          ))}
+        </div>
+  
+        {/* 🎉 Confirmation Card */}
+        <div className="relative z-10 max-w-4xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden print:shadow-none print:max-w-full print:w-full">
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-10 text-center">
+            <div className="h-24 w-24 mx-auto rounded-full bg-white/20 flex items-center justify-center mb-6 backdrop-blur-sm">
+              <FaCheck className="h-12 w-12 animate-bounce" />
+            </div>
+            <h1 className="text-4xl font-bold mb-2">Booking Confirmed!</h1>
+            <p className="text-lg text-emerald-100">
+              We've sent details to <strong>{bookingData.email || 'your email'}</strong>
+            </p>
+            <div className="mt-6 flex justify-center gap-4 flex-wrap">
+              <button
+                onClick={() => window.print()}
+                className="px-6 py-2 bg-white/10 border border-white/20 rounded-full text-sm font-medium text-white hover:bg-white/20 flex items-center shadow-sm transition"
+              >
+                <FaPrint className="mr-2" /> Print Ticket
+              </button>
+              <Link
+                to="/"
+                className="px-6 py-2 bg-white text-emerald-600 rounded-full text-sm font-semibold hover:bg-gray-100 flex items-center transition shadow-sm"
+              >
+                <FaHome className="mr-2" /> Back to Home
+              </Link>
+            </div>
           </div>
-          <h2 className="mt-4 text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
-          <p className="mt-2 text-gray-600">Your tour has been successfully booked. We've sent a confirmation to your email.</p>
-          
-          <div className="mt-8 bg-gray-50 p-6 rounded-lg text-left">
-            <h3 className="text-lg font-medium text-gray-900">Booking Details</h3>
-            <dl className="mt-4 space-y-3">
-              <div className="flex justify-between">
-                <dt className="text-sm font-medium text-gray-500">Booking Reference</dt>
-                <dd className="text-sm text-gray-900">#{Math.random().toString(36).substr(2, 8).toUpperCase()}</dd>
+  
+          <div className="p-6 md:p-10 space-y-10">
+            <div className="border border-gray-200 rounded-xl shadow-sm p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">{tourPackage.title}</h2>
+                  <p className="text-sm text-emerald-600 mt-1">Booking #{bookingData.bookingRef}</p>
+                </div>
+                <span className="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-medium">
+                  Confirmed
+                </span>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-sm font-medium text-gray-500">Tour</dt>
-                <dd className="text-sm text-gray-900 text-right">{tourPackage.title}</dd>
+            </div>
+  
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center justify-center"
+              >
+                <FaPrint className="mr-2" /> Print Receipt
+              </button>
+              <button
+                onClick={() => navigate('/bookings')}
+                className="flex-1 px-6 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition flex items-center justify-center"
+              >
+                View My Bookings
+              </button>
+            </div>
+          </div>
+  
+          {/* Print Section - Only visible when printing */}
+          <style jsx global>{`
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              .print-section, .print-section * {
+                visibility: visible;
+              }
+              .print-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+              }
+            }
+          `}</style>
+          <div className="print-section hidden print:block p-8 space-y-6">
+            <h2 className="text-2xl font-bold text-center text-gray-800">Booking Confirmation</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div>
+                <h3 className="font-semibold">Booking Details</h3>
+                <p><strong>Ref:</strong> #{bookingData.bookingRef}</p>
+                <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
+                <p><strong>Status:</strong> Confirmed</p>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-sm font-medium text-gray-500">Date</dt>
-                <dd className="text-sm text-gray-900">
-                  {new Date(bookingData.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                </dd>
+              <div>
+                <h3 className="font-semibold">Package</h3>
+                <p>{tourPackage.title}</p>
+                <p><strong>Travel Date:</strong> {new Date(bookingData.date).toLocaleDateString()}</p>
+                <p><strong>Duration:</strong> {bookingData.duration} {bookingData.duration === 1 ? 'day' : 'days'}</p>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-sm font-medium text-gray-500">Time</dt>
-                <dd className="text-sm text-gray-900">{bookingData.time}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm font-medium text-gray-500">Travelers</dt>
-                <dd className="text-sm text-gray-900">{bookingData.travelers}</dd>
-              </div>
-              <div className="pt-3 mt-3 border-t border-gray-200">
-                <div className="flex justify-between">
-                  <dt className="text-base font-medium text-gray-900">Total Paid</dt>
-                  <dd className="text-base font-bold text-indigo-600">₹{totalPrice.toLocaleString()}</dd>
+              <div>
+                <h3 className="font-semibold">Traveler</h3>
+                <p>{bookingData.fullName}</p>
+                <p>{bookingData.email}</p>
+                <p>{bookingData.phone}</p>
+                <div className="mt-2 flex gap-2 flex-wrap">
+                  {bookingData.adults > 0 && <span className="text-xs bg-blue-100 px-2 py-1 rounded">{bookingData.adults} Adults</span>}
+                  {bookingData.children > 0 && <span className="text-xs bg-green-100 px-2 py-1 rounded">{bookingData.children} Children</span>}
+                  {bookingData.infants > 0 && <span className="text-xs bg-purple-100 px-2 py-1 rounded">{bookingData.infants} Infants</span>}
                 </div>
               </div>
-            </dl>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Preferences</h3>
+                <div className="grid grid-cols-1 gap-1">
+                  <p><strong>Meal:</strong> {bookingData.mealPreference || 'Not specified'}</p>
+                  <p><strong>Transport:</strong> {bookingData.transportation || 'Not specified'}</p>
+                  <p><strong>Accommodation:</strong> {bookingData.accommodation || 'Not specified'}</p>
+                  {bookingData.roomType && <p><strong>Room Type:</strong> {bookingData.roomType}</p>}
+                  {bookingData.bedType && <p><strong>Bed Type:</strong> {bookingData.bedType}</p>}
+                  {bookingData.specialNeeds && <p><strong>Special Needs:</strong> Yes</p>}
+                  {bookingData.foodAllergies && <p><strong>Food Allergies:</strong> {bookingData.foodAllergies}</p>}
+                  {bookingData.specialRequests && <p><strong>Special Requests:</strong> {bookingData.specialRequests}</p>}
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="font-semibold mb-2">Important Notes</h3>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Please arrive 15 minutes before the scheduled time</li>
+                <li>Bring a valid ID for verification</li>
+                <li>Contact us at support@travelita.com for any changes</li>
+              </ul>
+            </div>
           </div>
-          
-          <div className="mt-8">
-            <button
-              onClick={() => window.print()}
-              className="w-full px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Print Receipt
-            </button>
-          </div>
+          {/* Help Section */}
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 print:hidden">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-blue-400 mt-1" fill="currentColor">
+                  <path d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM11 7a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-2 2a1 1 0 0 0 0 2v3a1 1 0 0 0 1 1h1a1 1 0 1 0 0-2v-3a1 1 0 0 0-1-1H9Z" />
+                </svg>
+                <div className="ml-3 text-sm text-blue-700">
+                  <h3 className="font-semibold text-blue-800">Need Help?</h3>
+                  <p className="mt-1">For any booking questions, contact:</p>
+                  <p className="mt-2">
+                    <a href="mailto:support@travelita.com" className="text-blue-800 hover:underline">
+                      support@travelita.com
+                    </a>{' '}
+                    •{' '}
+                    <a href="tel:+919567184287" className="text-blue-800 hover:underline">
+                      +91 9567184287
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -1389,7 +2032,7 @@ function BookingPage() {
           <div className="booking-content">
             {/* Left Column - Package Summary */}
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Exotic Goa Beach Retreat</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">{tourPackage?.title || 'Loading package...'}</h3>
               <motion.div 
                 className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"
                 initial={{ opacity: 0, y: 20 }}

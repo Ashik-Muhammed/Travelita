@@ -141,21 +141,21 @@ const UsersManagement = () => {
         </form>
 
         {/* Users Table */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg text-black">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan="4" className="px-6 py-4 text-center text-sm black">
                       No users found
                     </td>
                   </tr>
@@ -172,16 +172,16 @@ const UsersManagement = () => {
                             />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-black">
                               {user.displayName || 'No name'}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-black">
                               {user.phoneNumber || 'No phone'}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
                         {user.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -193,7 +193,7 @@ const UsersManagement = () => {
                           {user.role !== 'admin' && (
                             <button
                               onClick={() => handleUpdateRole(user.id, 'admin')}
-                              className="text-gray-600 hover:text-red-700"
+                              className="text-black hover:text-red-700"
                               title="Make Admin"
                             >
                               <FaUserShield className="h-5 w-5" />
@@ -204,7 +204,7 @@ const UsersManagement = () => {
                           {user.role !== 'admin' && (
                             <button
                               onClick={() => handleUpdateRole(user.id, user.role === 'vendor' ? 'user' : 'vendor')}
-                              className="text-gray-600 hover:text-blue-700"
+                              className="text-black hover:text-blue-700"
                               title={user.role === 'vendor' ? 'Demote to User' : 'Promote to Vendor'}
                             >
                               {user.role === 'vendor' ? (
@@ -218,7 +218,7 @@ const UsersManagement = () => {
                           {/* Delete User */}
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="text-gray-600 hover:text-red-700"
+                            className="text-black hover:text-red-700"
                             title="Delete User"
                           >
                             <FaTrash className="h-5 w-5" />
@@ -239,21 +239,21 @@ const UsersManagement = () => {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-black bg-white hover:bg-gray-50"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage(p => p + 1)}
                   disabled={users.length < usersPerPage}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-black bg-white hover:bg-gray-50"
                 >
                   Next
                 </button>
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-black">
                     Showing <span className="font-medium">{(currentPage - 1) * usersPerPage + 1}</span> to{' '}
                     <span className="font-medium">
                       {Math.min(currentPage * usersPerPage, (currentPage - 1) * usersPerPage + users.length)}
@@ -266,7 +266,7 @@ const UsersManagement = () => {
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-black hover:bg-gray-50"
                     >
                       <span className="sr-only">Previous</span>
                       <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -276,7 +276,7 @@ const UsersManagement = () => {
                     <button
                       onClick={() => setCurrentPage(p => p + 1)}
                       disabled={users.length < usersPerPage}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-black hover:bg-gray-50"
                     >
                       <span className="sr-only">Next</span>
                       <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

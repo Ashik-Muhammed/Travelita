@@ -20,15 +20,36 @@ export const getFallbackImage = (imageUrl, category = 'travel', size = '300x200'
   if (
     imageUrl.includes('placeholder.com') || 
     imageUrl.includes('localhost:5000') || 
-    imageUrl.includes('uploads/') || 
-    imageUrl.includes('undefined')
+    imageUrl.includes('undefined') ||
+    imageUrl.includes('via.placeholder.com')
   ) {
     return `https://source.unsplash.com/random/${size}/?${category}`;
   }
   
-  // If the URL doesn't start with http/https, assume it's a relative path or incomplete URL
-  if (!imageUrl.startsWith('http')) {
-    return `https://source.unsplash.com/random/${size}/?${category}`;
+  // If the URL is a Firebase Storage URL, ensure it's properly formatted
+  if (imageUrl.includes('firebasestorage.googleapis.com')) {
+    // Check if the URL needs token parameters
+    if (!imageUrl.includes('token=') && !imageUrl.includes('alt=media')) {
+      // If it's a Firebase Storage URL but missing token, we'll still use it
+      // as Firebase Storage URLs without tokens might still work for public files
+      return imageUrl;
+    }
+  }
+  
+  // If the URL is a relative path, try to make it absolute
+  if (!imageUrl.startsWith('http') && !imageUrl.startsWith('blob:')) {
+    // If it's a relative path starting with /, assume it's from the public folder
+    if (imageUrl.startsWith('/')) {
+      return imageUrl;
+    }
+    // Otherwise, try to construct a full URL
+    try {
+      const baseUrl = window.location.origin;
+      return new URL(imageUrl, baseUrl).toString();
+    } catch (e) {
+      console.warn('Failed to construct URL for:', imageUrl);
+      return `https://source.unsplash.com/random/${size}/?${category}`;
+    }
   }
   
   // Otherwise, return the original image URL

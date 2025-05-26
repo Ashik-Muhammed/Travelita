@@ -191,14 +191,11 @@ const AdminDashboard = () => {
     }
   };
 
-  // Component lifecycle
   useEffect(() => {
     initializeApp();
     return () => setIsMounted(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Loading state
   if (stats.loading) {
     return (
       <div className="admin-dashboard">
@@ -207,7 +204,6 @@ const AdminDashboard = () => {
     );
   }
 
-  // Error state
   if (stats.error) {
     return (
       <div className="admin-dashboard">
@@ -292,7 +288,7 @@ const AdminDashboard = () => {
                 
                 <div className="booking-details">
                   <p><strong>Package:</strong> {booking.package}</p>
-                  <p><strong>Amount:</strong> ${booking.amount?.toFixed(2)}</p>
+                  <p><strong>Amount:</strong> ₹{booking.amount?.toFixed(2)}</p>
                 </div>
 
                 <div className="booking-actions">

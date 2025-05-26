@@ -329,11 +329,30 @@ export const getPackageById = async (packageId) => {
     }
 
     // Process images to ensure they're valid
-    const processedImages = packageData.images ? 
-      (Array.isArray(packageData.images) ? 
-        packageData.images.map(img => getFallbackImage(img, 'travel', '800x600')) : 
-        [getFallbackImage(packageData.images, 'travel', '800x600')]) :
-      createFallbackPackage().images;
+    let processedImages = [];
+    
+    if (packageData.images) {
+      // If images is an array, process each one
+      if (Array.isArray(packageData.images)) {
+        processedImages = packageData.images.map(img => {
+          // If the image is an object with a url property, use that
+          if (typeof img === 'object' && img.url) {
+            return getFallbackImage(img.url, 'travel', '800x600');
+          }
+          // Otherwise, use the image directly
+          return getFallbackImage(img, 'travel', '800x600');
+        });
+      } 
+      // If it's a single image (string)
+      else if (typeof packageData.images === 'string') {
+        processedImages = [getFallbackImage(packageData.images, 'travel', '800x600')];
+      }
+    }
+    
+    // If no valid images were found, use a fallback
+    if (processedImages.length === 0) {
+      processedImages = createFallbackPackage().images;
+    }
 
     const result = { 
       id: packageId, 
